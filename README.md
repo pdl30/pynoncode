@@ -15,7 +15,7 @@ This will install the scripts found in the pyrnatools/scripts directory. For mor
 
 - bowtie version 1.0.0 or greater
 - HTseq-count version 0.6.0 or greater
-- samtools Version: 0.1.19 or greater
+- samtools version: 0.1.19 or greater
 - bedGraphToBigWig from UCSC binaries
 
 ##Core Pipeline
