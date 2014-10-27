@@ -216,21 +216,21 @@ def distribute_fragments(unique_dict, multi_dict, unique_totals, count_dict):
 def main():
 	parser = argparse.ArgumentParser(description='Processes ncRNA samples from fastq files to sam file.\n Please ensure FASTQ files are in current directory.\n ')
 	parser.add_argument('-i', '--input', help='Input directory after ncalign has been run', required=True)
-	parser.add_argument('-p', '--paired', help='Experiment is paired end', action="store_true", required=False)
-	parser.add_argument('-m', '--multi', action='store_true', help='Use multiple mapped reads and add to final count for genes', required=False)
+	parser.add_argument('-p', help='Experiment is paired end', action="store_true", required=False)
+	parser.add_argument('-m', action='store_true', help='Use multiple mapped reads and add to final count for genes', required=False)
 	args = vars(parser.parse_args())
 	
 	os.chdir(args["input"])
 	read_counts = read_count_file()
 
 	#Data dicts include transcript_counts, transcript_id, fragment_positions, fragment_counts [unique only!]
-	if args["paired"]:
+	if args["p"]:
 		unique_data = paired_uniquemapped_comp("unique_mapped.BED", read_counts)
 	else:
 		unique_data = single_uniquemapped_comp("unique_mapped.BED", read_counts)
 
-	if args["multi"]:
-		if args["paired"]:
+	if args["m"]:
+		if args["p"]:
 			multi_data = paired_multimapped_comp("multi_mapped.BED", read_counts)
 		else:
 			multi_data = single_multimapped_comp("multi_mapped.BED", read_counts)
