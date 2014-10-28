@@ -1,2 +1,2 @@
-recursive-include ncpipe *.py
-recursive-include ncpipe/data *.gmt
+recursive-include pynoncode *.py
+recursive-include pynoncode/data *.gmt

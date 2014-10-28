@@ -37,9 +37,13 @@ def convertBed_bigWig(genome, chromsizes):
 	inbed = pybedtools.BedTool("full_bed_file.BED")
 	sortbed = inbed.sort()
 	outcov = sortbed.genome_coverage(bg=True, genome=genome)
-	outcov.saveas("ncpipe_output.bedGraph")
-	command = ["bedGraphToBigWig", "ncpipe_output.bedGraph", chromsizes, "ncpipe_output.bw"]
+	outcov.saveas("pynoncode.bedGraph")
+	command = ["bedGraphToBigWig", "pynoncode.bedGraph", chromsizes, "pynoncode.bw"]
 	subprocess.call(command)
+
+def cleanup():
+	os.remove("pynoncode.bedGraph")
+	os.remove("full_bed_file.BED")
 
 def main():
 	parser = argparse.ArgumentParser(description='Processes an ncpipe processed folder to create bigwigs\n')
@@ -48,7 +52,8 @@ def main():
 	parser.add_argument('-e', help='Is sample aligned to Ensembl formatted genome?', action='store_true', required=False)
 	parser.add_argument('-g', '--genome', help='Options are mm10/hg19', required=True)
 	args = vars(parser.parse_args())
-	chrom = pkg_resources.resource_filename('ncpipe', 'data/{}.chrom.sizes'.format(args["genome"]))
+	chrom = pkg_resources.resource_filename('pynoncode', 'data/{}.chrom.sizes'.format(args["genome"]))
 	os.chdir(args["input"])
 	create_full_bedfile(args["e"])
 	convertBed_bigWig(args["genome"], chrom)
+	cleanup()

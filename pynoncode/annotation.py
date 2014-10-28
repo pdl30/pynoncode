@@ -25,10 +25,11 @@ def convert_and_sort(sam):
 	command1 = "samtools view -bS {0}.sam > {0}.bam\n".format(name)
 	command2 = "samtools sort {0}.bam {0}_sort\n".format(name)
 	command3 = "samtools index {0}_sort.bam\n".format(name)
-	print command1, command2, command3
 	subprocess.call(command1, shell=True)
 	subprocess.call(command2, shell=True)
 	subprocess.call(command3, shell=True)
+#	os.remove(sam)
+	os.remove("{0}.bam".format(name))
 
 def convert_sam_bed(sam, samout, paired, bed):
 	m = {}
@@ -94,6 +95,10 @@ def annotate_sam(sam_file, gtf_file, nctype=None):
 	with open(os.devnull, 'w') as devnull:
 		subprocess.call(command, stdout=devnull)
 
+def cleanup():
+	os.remove("unique_mapped.samout")
+	os.remove("multi_mapped.samout")
+
 def main():
 	parser = argparse.ArgumentParser(description='Processes ncRNA samples from fastq files to sam file.\n Please ensure FASTQ files are in current directory.\n ')
 	parser.add_argument('-i', '--input', help='Input directory after ncalign has been run', required=True)
@@ -104,15 +109,15 @@ def main():
 	if args["gtf"]:
 		gtf = args["gtf"]
 	else:
-		gtf = pkg_resources.resource_filename('ncpipe', 'data/mm10_ncRNA.gtf')
+		gtf = pkg_resources.resource_filename('pynoncode', 'data/mm10_ncRNA.gtf')
 
-	os.chdir(args["input"])
-
+	path = os.path.join(args["input"], "pynoncode")
+	os.chdir(path)
 	print("Annotating Sam File...\n"),
-#	annotate_sam("unique_mapped.sam", gtf)
-	#annotate_sam("multi_mapped.sam", gtf)
-	#convert_and_sort("unique_mapped.sam")
-	#convert_and_sort("multi_mapped.sam")
+	annotate_sam("unique_mapped.sam", gtf)
+	annotate_sam("multi_mapped.sam", gtf)
+	convert_and_sort("unique_mapped.sam")
+	convert_and_sort("multi_mapped.sam")
 	convert_sam_bed("unique_mapped_sort.bam", "unique_mapped.samout", args["paired"], "unique_mapped.BED")
 	convert_sam_bed("multi_mapped_sort.bam", "multi_mapped.samout", args["paired"], "multi_mapped.BED")
-
+	cleanup()

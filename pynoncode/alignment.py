@@ -218,18 +218,22 @@ def main():
 	index = args["index"]
 	outdir = args["outdir"]
 	path = os.getcwd()
+	outpath = os.path.join(args["outdir"], "pynoncode")
 	if os.path.isdir(outdir):
 		print "Output directory exists"
+	elif os.path.isdir(outpath) == False:
+		subprocess.call(["mkdir", outpath])
 	else:
 		subprocess.call(["mkdir", outdir])
+		subprocess.call(["mkdir", outpath])
 
 	if args["paired"]:
 		fq1 = args["paired"][0]
 		fq2 = args["paired"][1]
 
 		print("\nCreating Fasta files...\n"),
-		parse_paired_fastq(fq1, fq2, outdir) 
-		os.chdir(path + "/" + outdir)
+		parse_paired_fastq(fq1, fq2, outpath) 
+		os.chdir(outpath)
 
 		print("\nRunning Bowtie...\n"),
 		run_bowtie.paired_bowtie(index)
@@ -247,8 +251,8 @@ def main():
 		fq1 = args["fastq"]
 
 		print("\nCreating Fasta files...\n"),
-		parse_single_fastq(fq1, outdir)
-		os.chdir(outdir)
+		parse_single_fastq(fq1, outpath)
+		os.chdir(outpath)
 
 		print("\nRunning Bowtie...\n"),
 		run_bowtie.single_bowtie(index)
