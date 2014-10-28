@@ -211,7 +211,7 @@ def main():
 	parser = argparse.ArgumentParser(description='Processes ncRNA samples from fastq files to sam file.\n Please ensure FASTQ files are in current directory.\n ')
 	parser.add_argument('-f', '--fastq', help='Single end fastq', required=False)
 	parser.add_argument('-p', '--paired', help='Paired end fastqs. Please put them in order!', required=False, nargs='+')
-	parser.add_argument('-i', '--index', help='Path to bowtie2 index', required=True)
+	parser.add_argument('-i', '--index', help='Path to bowtie1 index', required=True)
 	parser.add_argument('-c', action='store_true', help='Clip tRNA ends', required=False)
 	parser.add_argument('-o', '--outdir', help='Output results to this directory', required=True)
 	args = vars(parser.parse_args())

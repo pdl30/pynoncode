@@ -102,7 +102,7 @@ def cleanup():
 def main():
 	parser = argparse.ArgumentParser(description='Processes ncRNA samples from fastq files to sam file.\n Please ensure FASTQ files are in current directory.\n ')
 	parser.add_argument('-i', '--input', help='Input directory after ncalign has been run', required=True)
-	parser.add_argument('-g', '--gtf', help='Path to ncRNA GTF file. If not provided, will use packages GTF file', required=False)
+	parser.add_argument('-g', '--gtf', help='Path to ncRNA GTF file. If not provided, will use packages mouse ensembl formatted GTF file', required=False)
 	#parser.add_argument('-type', help='Type of ncRNA to count, if not used, all ncRNAs are considered', required=False) #not implemented yet
 	parser.add_argument('-p', '--paired', help='Experiment is paired end', action="store_true", required=False)
 	args = vars(parser.parse_args())

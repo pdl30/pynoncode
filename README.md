@@ -21,5 +21,5 @@ This will install the scripts found in the pyrnatools/scripts directory. For mor
 ##Core Pipeline
 - pynon_align.py - Converts FASTQ to FASTA and runs bowtie aligner to exact both unique and multimapped sequences
 - pynon_anno.py - Annotates SAM files and converts them to BED format
-- pynon_count.py - Creates transcript counts and fragment counts files from BED files using if necessary multiple mapped reads
+- pynon_count.py - Creates transcript counts and fragment counts files from BED files using if specified multiple mapped reads
 - pynon_viz.py - Converts fragments table to UCSC formatted bigWigs

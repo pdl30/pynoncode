@@ -285,4 +285,4 @@ def main():
 				unique_data["fragment_positions"][fragment][2], fragment, unique_data["fragment_counts"][fragment], unique_data["fragment_positions"][fragment][3],
 				unique_data["transcript_id"][fragment])),
 	output1.close()
-	cleanup()
+	cleanup(orig_path, args["input"])
