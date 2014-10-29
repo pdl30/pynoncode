@@ -15,7 +15,7 @@ from collections import defaultdict
 import pysam
 import pybedtools
 from logging import info
-import ncpipe
+import pynoncode
 from itertools import izip
 import pkg_resources
 

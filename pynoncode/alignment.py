@@ -15,7 +15,7 @@ from collections import defaultdict
 import pysam
 import pybedtools
 from logging import info
-from ncpipe import run_bowtie
+from pynoncode import run_bowtie
 from itertools import izip
 
 def parse_paired_fastq(fq1, fq2, outdir):
