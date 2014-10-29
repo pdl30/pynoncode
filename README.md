@@ -12,7 +12,10 @@ $ python setup.py install --user
 This will install the scripts found in the pyrnatools/scripts directory. For more information on the individual scripts, use the --help command after each script. 
 
 ##Dependencies
-
+- numpy - This can be installed using:
+	pip install numpy
+- cython - This can be installed using:
+	pip install cython
 - bowtie version 1.0.0 or greater. [Link](http://bowtie-bio.sourceforge.net/index.shtml)
 - HTseq-count version 0.6.0 or greater. [Link](http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html)
 - samtools version: 0.1.19 or greater. [Link](http://www.htslib.org/)
