@@ -23,7 +23,7 @@ import pkg_resources
 def convert_and_sort(sam):
 	name = re.sub(".sam$", "", sam)
 	command1 = "samtools view -bS {0}.sam > {0}.bam\n".format(name)
-	command2 = "samtools sort {0}.bam {0}_sort\n".format(name)
+	command2 = "samtools sort -n {0}.bam {0}_sort\n".format(name)
 	command3 = "samtools index {0}_sort.bam\n".format(name)
 	subprocess.call(command1, shell=True)
 	subprocess.call(command2, shell=True)
