@@ -121,8 +121,8 @@ def main():
 	print("Annotating Sam File...\n"),
 	annotate_sam("unique_mapped.sam", gtf)
 	annotate_sam("multi_mapped.sam", gtf)
-	#convert_and_sort("unique_mapped.sam")
-	#convert_and_sort("multi_mapped.sam")
-	convert_sam_bed("unique_mapped.sam", "unique_mapped.samout", args["paired"], "unique_mapped.BED")
-	convert_sam_bed("multi_mapped.sam", "multi_mapped.samout", args["paired"], "multi_mapped.BED")
+	convert_and_sort("unique_mapped.sam")
+	convert_and_sort("multi_mapped.sam")
+	convert_sam_bed("unique_mapped_sort.sam", "unique_mapped.samout", args["paired"], "unique_mapped.BED")
+	convert_sam_bed("multi_mapped_sort.sam", "multi_mapped.samout", args["paired"], "multi_mapped.BED")
 	cleanup()
