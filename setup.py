@@ -9,7 +9,12 @@ setup(name='pynoncode',
       packages=['pynoncode'],
       package_data={"pynoncode":['data/*']},
       scripts=['scripts/pynon_align.py', 'scripts/pynon_anno.py', 'scripts/pynon_count.py', 'scripts/pynon_viz.py'],
-      install_requires=['numpy', 'cython', 'pysam', 'pybedtools', 'HTSeq'],
+      install_requires=['numpy', 
+        'scipy'
+        'cython', 
+        'pysam', 
+        'pybedtools', 
+        'HTSeq'],
       license='GPLv3',
       platforms='any',
       classifiers=[
