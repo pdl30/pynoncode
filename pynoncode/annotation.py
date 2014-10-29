@@ -21,15 +21,16 @@ import pkg_resources
 
 
 def convert_and_sort(sam):
+	#No need to do this now!
 	name = re.sub(".sam$", "", sam)
 	command1 = "samtools view -bS {0}.sam > {0}.bam\n".format(name)
 	command2 = "samtools sort -n {0}.bam {0}_sort\n".format(name)
-	command3 = "samtools index {0}_sort.bam\n".format(name)
+	command3 = "samtools view -h -o {0}_sort.sam {0}_sort.bam\n".format(name)
 	subprocess.call(command1, shell=True)
 	subprocess.call(command2, shell=True)
 	subprocess.call(command3, shell=True)
-#	os.remove(sam)
 	os.remove("{0}.bam".format(name))
+	os.remove("{0}_sort.bam".format(name))
 
 def convert_sam_bed(sam, samout, paired, bed):
 	m = {}
@@ -44,31 +45,35 @@ def convert_sam_bed(sam, samout, paired, bed):
 				m[word[0], word[2], int(word[3])] = mapped_to
 	bedout = open(bed, "w")
 
-	samfile = pysam.Samfile(sam, "rb")
+	samfile = pysam.Samfile(sam, "r")
 	if paired:	
+		first_reads = defaultdict(list)
+		second_reads = defaultdict(list)
 		for read in samfile.fetch() :
 			if read.tid == -1:
 				pass
 			else:
-				if read.is_proper_pair and read.is_read1 and read.tid == read.rnext:
-					pointer = samfile.tell() # pointer to the current position in the BAM file
-					try: 
-						mate = samfile.mate(read) 
-					except ValueError: 
-						continue 
-					finally: 
-						 samfile.seek(pointer) 
-					strand = '+'
-					if read.is_reverse:
-						strand = '-'
-					aligned = m.get(((read.qname, samfile.getrname(read.tid), read.pos+1)), None)
-					bedout.write("{}\t{}\t{}\t{}\t{}\t{}\t1\t{}\n".format(samfile.getrname(read.tid), read.pos, read.aend, read.qname, read.seq, strand, aligned)),
-				#elif read.is_proper_pair and read.is_read2:
-					strand2 = '+'
-					if mate.is_reverse:
-						strand2 = '-'
-					aligned = m.get(((mate.qname, samfile.getrname(mate.tid), mate.pos+1)), None)
-					bedout.write("{}\t{}\t{}\t{}\t{}\t{}\t2\t{}\n".format(samfile.getrname(mate.tid), mate.pos, mate.aend, mate.qname, mate.seq, strand2, aligned)),
+				if read.is_proper_pair and read.is_read1:
+					first_reads[read.qname].append(read)
+				elif read.is_proper_pair and read.is_read2:
+					second_reads[read.qname].append(read)
+		for ids in first_reads:
+			for f_reads in first_reads[ids]: #Loops over all those with the same IDs. Shouldn't matter if they are multiple mapped
+				aligned = m.get(((f_reads.qname, samfile.getrname(f_reads.tid), f_reads.pos+1)), None)
+				if aligned != "no_feature": #Exclude those uninteresting ones
+
+					s_reads = second_reads[ids] #List of second reads
+					for s_read in s_reads:
+						if f_reads.pnext == s_read.pos: #If position of next read is same as next reads start positions
+							paired_read = s_read
+					strand = "+"
+					if f_reads.is_reverse:
+						strand = "-"
+					strand2 = "+"
+					if s_read.is_reverse:
+						strand2 = "-"
+					bedout.write("{}\t{}\t{}\t{}\t{}\t{}\t1\t{}\n".format(samfile.getrname(f_reads.tid), f_reads.pos, f_reads.aend, f_reads.qname, f_reads.seq, strand, aligned)),
+					bedout.write("{}\t{}\t{}\t{}\t{}\t{}\t2\t{}\n".format(samfile.getrname(paired_read.tid), paired_read.pos, paired_read.aend, paired_read.qname, paired_read.seq, strand2, aligned)),
 	else:
 		for read in samfile.fetch() :
 			if read.tid == -1:
@@ -116,8 +121,8 @@ def main():
 	print("Annotating Sam File...\n"),
 	annotate_sam("unique_mapped.sam", gtf)
 	annotate_sam("multi_mapped.sam", gtf)
-	convert_and_sort("unique_mapped.sam")
-	convert_and_sort("multi_mapped.sam")
-	convert_sam_bed("unique_mapped_sort.bam", "unique_mapped.samout", args["paired"], "unique_mapped.BED")
-	convert_sam_bed("multi_mapped_sort.bam", "multi_mapped.samout", args["paired"], "multi_mapped.BED")
+	#convert_and_sort("unique_mapped.sam")
+	#convert_and_sort("multi_mapped.sam")
+	convert_sam_bed("unique_mapped.sam", "unique_mapped.samout", args["paired"], "unique_mapped.BED")
+	convert_sam_bed("multi_mapped.sam", "multi_mapped.samout", args["paired"], "multi_mapped.BED")
 	cleanup()
