@@ -14,7 +14,14 @@ import sys, re, os
 import pybedtools
 import pkg_resources
 
-def create_full_bedfile(ens):
+def create_full_bedfile(ens, chrom):
+	chromo = {}
+	with open(chrom) as f:
+		for line in f:
+			line = line.rstrip()
+			word = line.split("\t")
+			chromo[word[0]] = 1
+
 	output = open("full_bed_file.BED", "w")
 	with open("fragment_counts.txt") as f:
 		for line in f:
@@ -29,8 +36,9 @@ def create_full_bedfile(ens):
 					chrom = "chr"+ word[0]
 			else:
 				chrom = word[0]
-			for i in range(score):
-				output.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(chrom, word[1], word[2], word[3], word[4], word[5])),
+			if chrom in chromo:
+				for i in range(score):
+					output.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(chrom, word[1], word[2], word[3], word[4], word[5])),
 	output.close()
 
 def convertBed_bigWig(genome, chromsizes):
