@@ -1,2 +1,3 @@
 recursive-include pynoncode *.py
-recursive-include pynoncode/data *.gmt
+recursive-include pynoncode/data *.sizes
+recursive-include pynoncode/data *.gtf
