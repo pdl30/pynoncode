@@ -31,4 +31,5 @@ This will install the scripts found in the pyrnatools/scripts directory. For mor
 
 ##Annotation
 - Inlcuded in this package are a mouse and human GTF. For more information, see [here](https://github.com/pdl30/pynoncode/tree/master/pynoncode/data)
-- However if you wish to use your own annotation, please note the chromosome names and use the options to convert it to UCSC notation if required. 
+- However if you wish to use your own annotation, please make sure it is in GTF format. For more information see [here](http://www.ensembl.org/info/website/upload/gff.html).
+- Also please note the chromosome names in your GTF file and use the options to convert it to UCSC notation if required. 
