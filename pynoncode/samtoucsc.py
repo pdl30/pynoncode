@@ -62,6 +62,6 @@ def main():
 	args = vars(parser.parse_args())
 	chrom = pkg_resources.resource_filename('pynoncode', 'data/{}.chrom.sizes'.format(args["genome"]))
 	os.chdir(args["input"])
-	create_full_bedfile(args["e"])
+	create_full_bedfile(args["e"], chrom)
 	convertBed_bigWig(args["genome"], chrom)
 	cleanup()
