@@ -221,8 +221,6 @@ def main():
 	outpath = os.path.join(args["outdir"], "pynoncode")
 	if os.path.isdir(outdir):
 		print "Output directory exists"
-	elif os.path.isdir(outpath) == False:
-		subprocess.call(["mkdir", outpath])
 	else:
 		subprocess.call(["mkdir", outdir])
 		subprocess.call(["mkdir", outpath])
