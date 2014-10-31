@@ -28,7 +28,7 @@ This will install the scripts found in the pyrnatools/scripts directory. For mor
 - pynon_anno.py - Annotates SAM files and converts them to BED format
 - pynon_count.py - Creates transcript counts and fragment counts files from BED files using if specified multiple mapped reads
 - pynon_viz.py - Converts fragments table to UCSC formatted bigWigs
-- pynon_diff.py - Differential expression on transcripts and fragments. For examples of configuration files please see [here]()
+- pynon_diff.py - Differential expression on transcripts and fragments. For examples of configuration files please see [here](https://github.com/pdl30/pynoncode/tree/master/configuration_examples)
 
 ##Annotation
 - Inlcuded in this package are a mouse and human GTF. For more information, see [here](https://github.com/pdl30/pynoncode/tree/master/pynoncode/data)
