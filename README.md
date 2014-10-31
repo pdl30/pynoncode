@@ -28,12 +28,9 @@ This will install the scripts found in the pyrnatools/scripts directory. For mor
 - pynon_anno.py - Annotates SAM files and converts them to BED format
 - pynon_count.py - Creates transcript counts and fragment counts files from BED files using if specified multiple mapped reads
 - pynon_viz.py - Converts fragments table to UCSC formatted bigWigs
-<<<<<<< HEAD
 - pynon_diff.py - Differential expression on transcripts and fragments. For examples of configuration files please see [here]()
-=======
 
 ##Annotation
 - Inlcuded in this package are a mouse and human GTF. For more information, see [here](https://github.com/pdl30/pynoncode/tree/master/pynoncode/data)
 - However if you wish to use your own annotation, please make sure it is in GTF format. For more information see [here](http://www.ensembl.org/info/website/upload/gff.html).
 - Also please note the chromosome names in your GTF file and use the options to convert it to UCSC notation if required. 
->>>>>>> 034a8f3dc38cb2a0eb71ae853cea01cd1a4438ff
