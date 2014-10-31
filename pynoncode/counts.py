@@ -257,10 +257,10 @@ def main():
 		for fragment in distributed_fragments:
 			#First Read
 			if args["p"]:
-				output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(distributed_fragments[fragment][2][0][0],distributed_fragments[fragment][2][0][1],distributed_fragments[fragment][2][0][2],
+				output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t1\n".format(distributed_fragments[fragment][2][0][0],distributed_fragments[fragment][2][0][1],distributed_fragments[fragment][2][0][2],
 					distributed_fragments[fragment][0][0],distributed_fragments[fragment][1], distributed_fragments[fragment][2][0][3],distributed_fragments[fragment][3])),
 			#Second Read
-				output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(distributed_fragments[fragment][2][0][4],distributed_fragments[fragment][2][0][5],distributed_fragments[fragment][2][0][6],
+				output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t2\n".format(distributed_fragments[fragment][2][0][4],distributed_fragments[fragment][2][0][5],distributed_fragments[fragment][2][0][6],
 					distributed_fragments[fragment][0][1],distributed_fragments[fragment][1], distributed_fragments[fragment][2][0][7],distributed_fragments[fragment][3])),
 			else:
 				output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(distributed_fragments[fragment][2][0][0],distributed_fragments[fragment][2][0][1],distributed_fragments[fragment][2][0][2],
@@ -274,10 +274,10 @@ def main():
 	output1 = open("fragment_counts.txt", "a")
 	for fragment in unique_data["fragment_counts"]:
 		if args["p"]:
-			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(unique_data["fragment_positions"][fragment][0], unique_data["fragment_positions"][fragment][1], 
+			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t1\n".format(unique_data["fragment_positions"][fragment][0], unique_data["fragment_positions"][fragment][1], 
 				unique_data["fragment_positions"][fragment][2], fragment[0], unique_data["fragment_counts"][fragment], unique_data["fragment_positions"][fragment][3],
 				unique_data["transcript_id"][fragment])),
-			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(unique_data["fragment_positions"][fragment][4], unique_data["fragment_positions"][fragment][5], 
+			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t2\n".format(unique_data["fragment_positions"][fragment][4], unique_data["fragment_positions"][fragment][5], 
 				unique_data["fragment_positions"][fragment][6], fragment[1], unique_data["fragment_counts"][fragment], unique_data["fragment_positions"][fragment][7],
 				unique_data["transcript_id"][fragment])),
 		else:

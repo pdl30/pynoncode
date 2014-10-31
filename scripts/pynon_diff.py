@@ -9,4 +9,4 @@
 ########################################################################
 
 import pynoncode.diff_expression
-diff_expression.main()
+pynoncode.diff_expression.main()
