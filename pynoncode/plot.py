@@ -1,0 +1,216 @@
+#!/usr/bin/python
+
+########################################################################
+# 31 Oct 2014
+# Patrick Lombard, Centre for Stem Stem Research
+# Core Bioinformatics Group
+# University of Cambridge
+# All right reserved.
+########################################################################
+
+import subprocess
+import sys, re, os
+import ConfigParser
+import itertools
+import argparse
+from collections import defaultdict
+import pkg_resources
+import HTSeq
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from multiprocessing import Pool, Manager
+
+def read_trans_custom_input(ifile):
+	trans = {}
+	with open(ifile) as f:
+		header = next(f)
+		for line in f:
+			line = line.rstrip()
+			word = line.split("\t")
+			trans[word[0]] = 1
+	return trans
+
+def read_frag_input(ifile, paired):
+	frags = {}
+	with open(ifile) as f:
+		header = next(f)
+		for line in f:
+			line = line.rstrip()
+			word = line.split("\t")
+			if not paired:
+				frags[word[0]] = 1
+	return frags ##Will start with single and then consider paired
+
+def find_frag_transcripts(conditions, frags, paired):
+	transcripts = {}
+	for idir in conditions:
+		with open(idir + "/fragment_counts.txt") as f:
+			for line in f:
+				line = line.rstrip()
+				word = line.split("\t")
+				if not paired:
+					if word[3] in frags:
+						transcripts[word[6]] = 1
+	return transcripts
+
+def read_directories_for_transcripts(conditions, transcript_coords, paired):
+	transcript_arrays = {} #Initialise this dictionary
+	for trans in transcript_coords:
+		transcript_arrays[trans] = {}
+		for idir in conditions:
+			length = int(transcript_coords[trans][2]) - int(transcript_coords[trans][1])
+			transcript_arrays[trans][idir] = np.zeros(length, dtype='f')
+	for idir in conditions:
+		with open(idir + "/fragment_counts.txt") as f:
+			for line in f:
+				line = line.rstrip()
+				word = line.split("\t")
+				if not paired:
+					if word[6] in transcript_coords:
+						start = int(word[1]) - int(transcript_coords[word[6]][1])
+						end = int(word[2]) - int(transcript_coords[word[6]][1])
+						if start < 0:
+							start = 0
+						if end > int(transcript_coords[word[6]][2]):
+							end = int(transcript_coords[word[6]][2])
+						transcript_arrays[word[6]][idir][start:end] += float(word[4])#Add the count of that fragment to the transcript range it covers
+	return transcript_arrays
+
+def invert_dict_nonunique(d):
+    newdict = {}
+    for k, v in d.iteritems():
+        newdict.setdefault(v, []).append(k)
+    return newdict
+
+def average_arrays(conditions, transcript_arrays, transcript_coords):
+	inv_conditions = invert_dict_nonunique(conditions)
+	inv_array = {}
+	for transcript in sorted(transcript_arrays):
+		length = int(transcript_coords[transcript][2]) - int(transcript_coords[transcript][1])
+		inv_array[transcript] = {}
+		for cond in inv_conditions:
+			inv_array[transcript][cond] = np.zeros(length, dtype='f')
+			count = 1
+			for sample in inv_conditions[cond]:
+				inv_array[transcript][cond] += transcript_arrays[transcript][sample]
+				count += 1
+			inv_array[transcript][cond] /= count
+	return inv_array
+
+def plot_arrays(conditions, transcript_arrays, outputdir):
+	for transcript in sorted(transcript_arrays):
+		for sample in sorted(transcript_arrays[transcript]):
+			length_of_transcript = len(transcript_arrays[transcript][sample])
+			base_label = np.array(xrange(length_of_transcript))
+			plt.plot(base_label, transcript_arrays[transcript][sample], label="{}".format(sample)) #Wrong!
+		plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':6})
+		plt.ylabel('Read Count')
+		plt.savefig(outputdir+'/{}.png'.format(transcript))
+		plt.close()
+
+#To reduce memory usage, just store interesting transcripts
+def preprocess_gtf(gtf, transcripts):
+	gtffile = HTSeq.GFF_Reader( gtf )
+	exons = defaultdict(list)
+	for feature in gtffile:
+		if feature.type == "exon":
+			if feature.attr["transcript_id"] in transcripts:
+				exons[feature.attr["transcript_id"]].append(feature) #Just a list of exons for each transcript
+	transcript_coords = {}
+	for trans in sorted(exons):
+		list_of_exons = exons[trans]
+		if len(list_of_exons) == 1: #Don't care about exon numbers, just get start and end. Strand is unimportant
+			transcript_coords[trans] = (exons[trans][0].iv.chrom, exons[trans][0].iv.start, exons[trans][0].iv.end, exons[trans][0].iv.strand) 
+		else:
+			#Strand is important here, need to becareful here.
+			exon_count = 1
+			for exon in list_of_exons:
+				if exon.iv.strand == "+":
+					if exon.attr["exon_number"] == "1":
+						chrom = exon.iv.chrom
+						start = exon.iv.start
+						strand = exon.iv.strand
+					else:
+						if exon.attr["exon_number"] > exon_count:
+							end = exon.iv.end
+				else: #Reverse start and end for negative strands
+					if exon.attr["exon_number"] == "1":
+						chrom = exon.iv.chrom
+						end = exon.iv.end
+						strand = exon.iv.strand
+					else:
+						if exon.attr["exon_number"] > exon_count:
+							start = exon.iv.start
+				exon_number = exon.attr["exon_number"]
+			transcript_coords[trans] = (chrom, start, end, strand)
+	return transcript_coords
+
+def ConfigSectionMap(section, Config):
+	dict1 = {}
+	options = Config.options(section)
+	for option in options:
+		try:
+			dict1[option] = Config.get(section, option)
+			if dict1[option] == -1:
+				DebugPrint("skip: %s" % option)
+		except:
+			print("exception on %s!" % option)
+			dict1[option] = None
+	return dict1
+
+def read_dirs(args):
+	return read_directories_for_transcripts(*args)
+
+def main():
+	parser = argparse.ArgumentParser(description='Plots transcripts from pynon processed samples\n')
+
+	parser.add_argument('-c','--config', help='Config file, similar as the one supplied to pynon_diff.py. Please see documentation for more details', required=True)
+
+	parser.add_argument('-i','--input', help='Input file. Can be custom input file, transcripts or fragments file from DESEQ2, please specify using --type', required=True)
+
+	parser.add_argument('-t','--type', help='Options are custom/trans/frag according to which input file is submitted', required=True)
+
+	parser.add_argument('-g','--gtf', help='GTF for annotation. If not supplied, will use the packages GTF')
+
+	parser.add_argument('-n','--genome', help='Sample genome name, options are hg19/mm10', required=True)
+
+	parser.add_argument('-p', help='Use if samples are paired end. Must be fixed first',  action="store_true", required=False)
+
+	parser.add_argument('-a', help='Average sample according to sample conditions',  action="store_true", required=False)
+
+	parser.add_argument('-o','--outdir', help='Output directory', required=True)
+
+	args = vars(parser.parse_args())
+
+	Config = ConfigParser.ConfigParser()
+	Config.optionxform = str
+	Config.read(args["config"])
+	conditions = ConfigSectionMap("Conditions", Config)
+
+	if os.path.isdir(args["outdir"]):
+		print "Output directory already exists, will overwrite if necessary"
+	else:
+		os.mkdir(args["outdir"])
+
+	if args["gtf"]:
+		gtf = args["gtf"]
+	else:
+		gtf = pkg_resources.resource_filename('pynoncode', 'data/{}_ncRNA.gtf'.format(args["genome"]))
+	
+	if args["subparser_name"] == "trans" or args["subparser_name"] == "custom": #Exactly the same process
+		transcripts = read_trans_custom_input(args["input"])
+	elif args["subparser_name"] == "frags":
+		fragments = read_frag_input(args["input"], args["p"])
+		transcripts = find_frag_transcripts(conditions, fragments, args["p"])
+
+	transcript_coords = preprocess_gtf(gtf, transcripts)
+	transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"])
+	if args["a"]:
+		averaged_array = average_arrays(conditions, transcript_arrays, transcript_coords)
+		plot_arrays(conditions, averaged_array, args["outdir"])
+	else:
+		plot_arrays(conditions, transcript_arrays, args["outdir"])
+
+	

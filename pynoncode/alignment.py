@@ -263,6 +263,8 @@ def main():
 			combine_samfiles()
 			combine_samfiles(multi=True) 
 	combine_reports()
+	useful_fastas = ["original_fasta_1.fa", "original_fasta_2.fa", "original_fasta.fa", "clipped_1.fa", "clipped_2.fa", "clipped_fasta.fa"]
 	falist = [ f for f in os.listdir(".") if f.endswith(".fa") ]
 	for f in falist:
-		os.remove(f)
+		if f not in useful_fastas:
+			os.remove(f)
