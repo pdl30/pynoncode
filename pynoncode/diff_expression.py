@@ -126,7 +126,7 @@ def create_design_for_R(outdir, idict):
 		output.write("{}\t{}\n".format(key, idict[key]))
 	output.close()
 
-def ConfigSectionMap(section):
+def ConfigSectionMap(section, Config):
 	dict1 = {}
 	options = Config.options(section)
 	for option in options:
@@ -181,8 +181,8 @@ def main():
 		os.mkdir(args["outdir"])
 
 		#Read design matrix and create list of conditions and directories
-	conditions = ConfigSectionMap("Conditions")
-	comparisons = ConfigSectionMap("Comparisons")
+	conditions = ConfigSectionMap("Conditions", Config)
+	comparisons = ConfigSectionMap("Comparisons", Config)
 	create_design_for_R(args["outdir"], conditions) #Create design matrix
 
 	if args["subparser_name"] == "trans":

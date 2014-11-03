@@ -6,7 +6,7 @@ Clone this repository and then:
 
 ```bash
 $ cd pynoncode/
-$ python setup.py install --user
+$ python setup.py install
 ```
 
 This will install the scripts found in the pyrnatools/scripts directory. For more information on the individual scripts, use the --help command after each script. 
