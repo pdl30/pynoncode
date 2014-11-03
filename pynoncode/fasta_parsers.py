@@ -12,6 +12,7 @@ import argparse
 import subprocess
 import sys, re, os
 from collections import defaultdict
+from itertools import izip
 
 def parse_paired_fastq(fq1, fq2, outdir):
 	dict2 = defaultdict(int)

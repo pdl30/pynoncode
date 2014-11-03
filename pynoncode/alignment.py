@@ -17,6 +17,7 @@ import pybedtools
 from logging import info
 from pynoncode import run_bowtie, fasta_parsers
 from itertools import izip
+import pkg_resources
 
 def combine_samfiles(multi=False, clipped=False):
 	#Seperate out clipped and unclipped!
