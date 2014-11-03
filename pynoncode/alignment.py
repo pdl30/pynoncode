@@ -15,86 +15,8 @@ from collections import defaultdict
 import pysam
 import pybedtools
 from logging import info
-from pynoncode import run_bowtie
+from pynoncode import run_bowtie, fasta_parsers
 from itertools import izip
-
-def parse_paired_fastq(fq1, fq2, outdir):
-	dict2 = defaultdict(int)
-	count_dict = defaultdict(int)
-	f1=open(fq1)
-	f2=open(fq2)
-	for line1, line2 in izip(f1, f2):
-		line1 = line1.rstrip()
-		id1 = line1.split("#")
-		line2 = line2.rstrip()
-		id2 = line2.split("#")
-		try:
-			id11 = next(f1)
-			read1 = id11.rstrip()
-			id22 = next(f2)
-			read2 = id22.rstrip()
-			reads = "{}\t{}".format(read1, read2)
-			dict2[reads] += 1
-			crap = next(f1)
-			crap2 = next(f1)
-			crap = next(f2)
-			crap2 = next(f2)
-		except StopIteration:
-			break
-	seen = {}
-	name1 = "original_fasta_1.fa"
-	name2 = "original_fasta_2.fa"
-	count = 1
-	output1 = open(outdir + "/" + name1, "wb")
-	output2 = open(outdir + "/" + name2, "wb")
-	for key in dict2.keys():
-		reads = key.split("\t")
-		output1.write(">ID:{}\n{}\n".format(count, reads[0])),
-		output2.write(">ID:{}\n{}\n".format(count, reads[1])),
-		count_dict[count] = dict2[key]
-		count += 1
-	output3 = open(outdir + "/" + "count_dict.txt", "w")
-	for key in count_dict.keys():
-		output3.write("{}\t{}\n".format(key, count_dict[key])),
-
-def parse_single_fastq(fq1, outdir):
-	dict2 = defaultdict(int)
-	count_dict = defaultdict(int)
-	f1=open(fq1)
-	for line1 in f1:
-		line1 = line1.rstrip()
-		id1 = line1.split("#")
-		try:
-			id11 = next(f1)
-			read1 = id11.rstrip()
-			dict2[read1] += 1
-			crap = next(f1)
-			crap2 = next(f1)
-		except StopIteration:
-			break
-	seen = {}
-	name1 = "original_fasta.fa"
-	count = 1
-	output1 = open(outdir + "/" + name1, "wb")
-	for key in dict2.keys():
-		reads = key.split("\t")
-		output1.write(">ID:{}\n{}\n".format(count, reads[0])),
-		count_dict[count] = dict2[key]
-		count += 1
-	output3 = open(outdir + "/" + "count_dict.txt", "w")
-	for key in count_dict.keys():
-		output3.write("{}\t{}\n".format(key, count_dict[key])),
-
-def read_fasta(fp):
-	name, seq = None, []
-	for line in fp:
-		line = line.rstrip()
-		if line.startswith(">"):
-			if name: yield (name, ''.join(seq))
-			name, seq = line, []
-		else:
-			seq.append(line)
-	if name: yield (name, ''.join(seq))
 
 def combine_samfiles(multi=False, clipped=False):
 	#Seperate out clipped and unclipped!
@@ -146,51 +68,6 @@ def combine_samfiles(multi=False, clipped=False):
 		out.write(r)
 	subprocess.call(["rm", "tmp2.bam", "tmp1.bam", sam1, bam1])
 
-def stripper(fasta):
-	result = {}
-	with open(fasta) as f:
-		for name, seq in read_fasta(f):
-			bases = list(seq)
-			end1 = bases[-3:]
-			end1 = ''.join(end1)
-			if end1 == "CCA":
-				tmpseq = bases[:-3]
-				seq = ''.join(tmpseq)
-			end2 = bases[-4:]
-			end2 = ''.join(end2)
-			if end2 == "CCAC":
-				tmpseq = bases[:-4]
-				seq = ''.join(tmpseq)
-			end3 = bases[-5:]
-			end3 = ''.join(end3)
-			if end3 == "CCACC":
-				tmpseq = bases[:-5]
-				seq = ''.join(tmpseq)
-			end4 = bases[-6:]
-			end4 = ''.join(end4)
-			if end4 == "CCACCA":
-				tmpseq = bases[:-6]
-				seq = ''.join(tmpseq)
-			result[name] = seq
-	return result
-
-def strip_ends(paired):
-	if paired == True:
-		output1 = open("clipped_1.fa", "w")
-		output2 = open("clipped_2.fa", "w")
-		
-		data1 = stripper("unclipped_multi_unmapped_1.fa")
-		data2 = stripper("unclipped_multi_unmapped_2.fa")
-		for key in sorted(data1.keys()):
-			output1.write("{}\n{}\n".format(key, data1[key])),
-		for key in sorted(data2.keys()):
-			output2.write("{}\n{}\n".format(key, data2[key])),
-	else:
-		data1 = stripper("unclipped_multi_unmapped.fa")
-		output1 = open("clipped_fasta.fa", "w")
-
-		for key in sorted(data1.keys()):
-			output1.write("{}\n{}\n".format(key, data1[key])),
 
 def combine_reports():
 	txtlist = [ f for f in os.listdir(".") if f.endswith("_report.txt") ]
@@ -207,6 +84,89 @@ def combine_reports():
 		os.remove(txt)
 	output.close()
 
+def convert_sam_bed(sam, samout, paired, bed):
+	m = {}
+	with open(samout) as f:
+		for line in f:
+			line = line.rstrip()
+			word = line.split("\t")
+			if len(word) > 13:
+				mapped = word[14].split(":")
+				mapped_to = re.sub("__", "", mapped[2])
+				#Read name, chromosome, start - 1 based
+				m[word[0], word[2], int(word[3])] = mapped_to
+	bedout = open(bed, "w")
+
+	samfile = pysam.Samfile(sam, "r")
+	if paired:	
+		first_reads = defaultdict(list)
+		second_reads = defaultdict(list)
+		for read in samfile.fetch() :
+			if read.tid == -1:
+				pass
+			else:
+				if read.is_proper_pair and read.is_read1:
+					first_reads[read.qname].append(read)
+				elif read.is_proper_pair and read.is_read2:
+					second_reads[read.qname].append(read)
+		for ids in first_reads:
+			for f_reads in first_reads[ids]: #Loops over all those with the same IDs. Shouldn't matter if they are multiple mapped
+				aligned = m.get(((f_reads.qname, samfile.getrname(f_reads.tid), f_reads.pos+1)), None)
+				if aligned != "no_feature": #Exclude those uninteresting ones
+
+					s_reads = second_reads[ids] #List of second reads
+					for s_read in s_reads:
+						if f_reads.pnext == s_read.pos: #If position of next read is same as next reads start positions
+							paired_read = s_read
+					strand = "+"
+					if f_reads.is_reverse:
+						strand = "-"
+					strand2 = "+"
+					if s_read.is_reverse:
+						strand2 = "-"
+					bedout.write("{}\t{}\t{}\t{}\t{}\t{}\t1\t{}\n".format(samfile.getrname(f_reads.tid), f_reads.pos, f_reads.aend, f_reads.qname, f_reads.seq, strand, aligned)),
+					bedout.write("{}\t{}\t{}\t{}\t{}\t{}\t2\t{}\n".format(samfile.getrname(paired_read.tid), paired_read.pos, paired_read.aend, paired_read.qname, paired_read.seq, strand2, aligned)),
+	else:
+		for read in samfile.fetch() :
+			if read.tid == -1:
+				pass
+			else:
+				strand = '+'
+				if read.is_reverse:
+					strand = '-'
+				aligned = m.get(((read.qname, samfile.getrname(read.tid), read.pos+1)), None)
+				bedout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(samfile.getrname(read.tid), read.pos, read.aend, read.qname, read.seq, strand, aligned)),
+	bedout.close()
+	samfile.close()
+
+def annotate_sam(sam_file, gtf_file, nctype=None):
+	name = re.sub(".sam", "", sam_file)
+	if nctype == None:
+		command = ["htseq-count", "--quiet", "--samout={}.samout".format(name), "--minaqual=0", "--idattr=transcript_id", "{}.sam".format(name),  gtf_file]
+	else:
+		if nctype == "miRNA" or nctype == "tRNA":
+			command = ["htseq-count", "--quiet", "--type={}".format(nctype), "--minaqual=0", "--samout={}.samout".format(name), "{}.sam".format(name), gtf_file]
+		else:
+			raise Exception("Unrecognised ncRNA type!")
+	with open(os.devnull, 'w') as devnull:
+		subprocess.call(command, stdout=devnull)
+
+def cleanup():
+	os.remove("unique_mapped.samout")
+	os.remove("multi_mapped.samout")
+
+def convert_and_sort(sam):
+	#No need to do this now!
+	name = re.sub(".sam$", "", sam)
+	command1 = "samtools view -bS {0}.sam > {0}.bam\n".format(name)
+	command2 = "samtools sort -n {0}.bam {0}_sort\n".format(name)
+	command3 = "samtools view -h -o {0}_sort.sam {0}_sort.bam\n".format(name)
+	subprocess.call(command1, shell=True)
+	subprocess.call(command2, shell=True)
+	subprocess.call(command3, shell=True)
+	os.remove("{0}.bam".format(name))
+	os.remove("{0}_sort.bam".format(name))
+
 def main():	
 	parser = argparse.ArgumentParser(description='Processes ncRNA samples from fastq files to sam file.\n Please ensure FASTQ files are in current directory.\n ')
 	parser.add_argument('-f', '--fastq', help='Single end fastq', required=False)
@@ -214,6 +174,8 @@ def main():
 	parser.add_argument('-i', '--index', help='Path to bowtie1 index', required=True)
 	parser.add_argument('-c', action='store_true', help='Clip tRNA ends', required=False)
 	parser.add_argument('-o', '--outdir', help='Output results to this directory', required=True)
+	parser.add_argument('-a', '--gtf', help='Path to ncRNA GTF file. If not provided, will use packages mouse ensembl formatted GTF file', required=False)
+	parser.add_argument('-g', '--genome', help='Genome samples are aligned to. Options are hg19/mm10', required=True)
 	args = vars(parser.parse_args())
 	index = args["index"]
 	outdir = args["outdir"]
@@ -225,19 +187,24 @@ def main():
 		subprocess.call(["mkdir", outdir])
 		subprocess.call(["mkdir", outpath])
 
+	if args["gtf"]:
+		gtf = args["gtf"]
+	else:
+		gtf = pkg_resources.resource_filename('pynoncode', 'data/{}_ncRNA.gtf'.format(args["genome"]))
+
 	if args["paired"]:
 		fq1 = args["paired"][0]
 		fq2 = args["paired"][1]
 
 		print("\nCreating Fasta files...\n"),
-		parse_paired_fastq(fq1, fq2, outpath) 
+		fasta_parsers.parse_paired_fastq(fq1, fq2, outpath) 
 		os.chdir(outpath)
 
 		print("\nRunning Bowtie...\n"),
 		run_bowtie.paired_bowtie(index)
 		
 		if args["c"]:
-			strip_ends(True)
+			fasta_parsers.strip_ends(True)
 			run_bowtie.paired_bowtie(index, True)
 			combine_samfiles(clipped=True) 
 			combine_samfiles(multi=True, clipped=True) #Multimapper combination
@@ -249,13 +216,13 @@ def main():
 		fq1 = args["fastq"]
 
 		print("\nCreating Fasta files...\n"),
-		parse_single_fastq(fq1, outpath)
+		fasta_parsers.parse_single_fastq(fq1, outpath)
 		os.chdir(outpath)
 
 		print("\nRunning Bowtie...\n"),
 		run_bowtie.single_bowtie(index)
 		if args["c"]:
-			strip_ends(False)
+			fasta_parsers.strip_ends(False)
 			run_bowtie.single_bowtie(index, True)
 			combine_samfiles(clipped=True) #Can't parallelise from here on!
 			combine_samfiles(multi=True, clipped=True) #Multimapper combination
@@ -263,6 +230,15 @@ def main():
 			combine_samfiles()
 			combine_samfiles(multi=True) 
 	combine_reports()
+	
+	#Annotation part of the script
+	annotate_sam("unique_mapped.sam", gtf)
+	annotate_sam("multi_mapped.sam", gtf)
+	convert_and_sort("unique_mapped.sam")
+	convert_and_sort("multi_mapped.sam")
+	convert_sam_bed("unique_mapped_sort.sam", "unique_mapped.samout", args["paired"], "unique_mapped.BED")
+	convert_sam_bed("multi_mapped_sort.sam", "multi_mapped.samout", args["paired"], "multi_mapped.BED")
+	cleanup()
 	useful_fastas = ["original_fasta_1.fa", "original_fasta_2.fa", "original_fasta.fa", "clipped_1.fa", "clipped_2.fa", "clipped_fasta.fa"]
 	falist = [ f for f in os.listdir(".") if f.endswith(".fa") ]
 	for f in falist:
