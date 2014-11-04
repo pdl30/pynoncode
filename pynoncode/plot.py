@@ -212,7 +212,7 @@ def main():
 
 	parser.add_argument('-n','--genome', help='Sample genome name, options are hg19/mm10', required=True)
 
-	parser.add_argument('-p', help='Use if samples are paired end. Must be fixed first',  action="store_true", required=False)
+	parser.add_argument('-p', help='Use if samples are paired end', action="store_true", required=False)
 
 	parser.add_argument('-a', help='Average sample according to sample conditions',  action="store_true", required=False)
 
@@ -235,9 +235,9 @@ def main():
 	else:
 		gtf = pkg_resources.resource_filename('pynoncode', 'data/{}_ncRNA.gtf'.format(args["genome"]))
 	
-	if args["subparser_name"] == "trans" or args["subparser_name"] == "custom": #Exactly the same process
+	if args["type"] == "trans" or args["type"] == "custom": #Exactly the same process
 		transcripts = read_trans_custom_input(args["input"])
-	elif args["subparser_name"] == "frags":
+	elif args["type"] == "frags":
 		fragments = read_frag_input(args["input"], args["p"])
 		transcripts = find_frag_transcripts(conditions, fragments, args["p"])
 
