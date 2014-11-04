@@ -15,10 +15,10 @@ import itertools
 import argparse
 from collections import defaultdict
 
-def join_trans_counts(idict, outdir):
+def join_trans_counts(idict):
 	print "==> Combining transcript counts...\n"
 	transcripts = {}
-	output = open(outdir+"/combined_transcript_counts.tsv", "w")
+	output = open("combined_transcript_counts.tsv", "w")
 	output.write("ID"), #Sort out header
 	for idir in sorted(idict):
 		output.write("\t{}".format(idir)),
@@ -45,10 +45,10 @@ def join_trans_counts(idict, outdir):
 		output.write("\n"),
 	output.close()
 
-def join_frag_counts(idict, outdir, paired):
+def join_frag_counts(idict, paired):
 	print "==> Combining fragment counts...\n"
 	data = {}
-	output = open(outdir+"/combined_fragment_counts.tsv", "w")
+	output = open("combined_fragment_counts.tsv", "w")
 	output.write("ID"),
 	for idir in sorted(idict):
 		output.write("\t{}".format(idir)),
@@ -61,14 +61,14 @@ def join_frag_counts(idict, outdir, paired):
 						next_line = next(f).rstrip()
 						next_word = next_line.split("\t")
 						if int(next_word[7]) == 2:
-							if (word[3], next_word[3]) in data:
-								if idir in data[(word[3], next_word[3])]:
-									data[(word[3], next_word[3])][idir] += float(word[4]) #Allow for mulitple mapped fragments
+							if (word[3], next_word[3]) in data: #If fragment already in dict
+								if idir in data[word[3], next_word[3]]: #If sample already found
+									data[word[3], next_word[3]][idir] += float(word[4]) #Allow for mulitple mapped fragments
 								else:
-									data[(word[3], next_word[3])][idir] = float(word[4])
+									data[word[3], next_word[3]][idir] = float(word[4]) #Add sample and value
 							else:
-								data[(word[3], next_word[3])][idir] = {} #New fragment
-								data[(word[3], next_word[3])][idir] = float(word[4])
+								data[word[3], next_word[3]] = {} #New fragment
+								data[word[3], next_word[3]][idir] = float(word[4]) #Add count and sample
 		else:
 			with open(idir + "/fragment_counts.txt") as f:
 				for line in f:
@@ -85,18 +85,18 @@ def join_frag_counts(idict, outdir, paired):
 	output.write("\n"),
 	for frag in sorted(data):
 		#Then loop over samples:
-		if paired:
-			output.write("{}\t{}".format(frag[0], frag[1])),
+		if paired: 
+			output.write("{}|{}".format(frag[0], frag[1])),
 		else:
 			output.write("{}".format(frag)),
-		for idir in sorted(idict):
-			value = round(float(data[frag].get(idir, 0)))
+		for idir in sorted(idict): #Loop over counts per sample
+			value = round(float(data[frag].get(idir, 0))) #Get 0 if sample not found for that fragment
 			output.write("\t{}".format(value)),
 		output.write("\n"),
 	output.close()
 
 
-def write_deseq(sample_dict, cond1, cond2, padj, atype):
+def write_deseq(sample_dict, cond1, cond2, pval, atype):
 	print "==> Running differental expression analysis...\n"
 	rscript =  "suppressMessages(library(DESeq2))\n"
 	rscript += "pdata <- read.table('tmp_design.txt', header=T)\n"
@@ -110,7 +110,7 @@ def write_deseq(sample_dict, cond1, cond2, padj, atype):
 	rscript += "rnaseq_dds$condition <- factor(rnaseq_dds$condition, levels=unique(pdata[,2]))\n"
 	rscript += "rnaseq_dds <- DESeq(rnaseq_dds)\n"
 	rscript += "rnaseq_res <- results(rnaseq_dds, contrast=c('condition','{0}','{1}'))\n".format(cond1, cond2)
-	rscript += "rnaseq_sig <- rnaseq_res[which(rnaseq_res$pvalue <= {}),]\n".format(padj)
+	rscript += "rnaseq_sig <- rnaseq_res[which(rnaseq_res$pvalue <= {}),]\n".format(pval)
 	if atype == "trans":
 		rscript += "write.table(rnaseq_sig, file='{0}_vs_{1}_sig_transcripts.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
 		rscript += "write.table(rnaseq_res, file='{0}_vs_{1}_all_transcripts.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
@@ -119,8 +119,8 @@ def write_deseq(sample_dict, cond1, cond2, padj, atype):
 		rscript += "write.table(rnaseq_res, file='{0}_vs_{1}_all_fragments.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
 	return rscript
 
-def create_design_for_R(outdir, idict):
-	output = open(outdir + "/tmp_design.txt", "w")
+def create_design_for_R(idict):
+	output = open("tmp_design.txt", "w")
 	output.write("sampleName\tcondition\n"),
 	for key in sorted(idict.keys()):
 		output.write("{}\t{}\n".format(key, idict[key]))
@@ -153,6 +153,9 @@ def run_rcode(rscript, name):
 		traceback.extract_tb( sys.exc_info()[2] )[-1][1] ) )
 		sys.exit(1)
 
+def cleanup():
+	os.remove("deseq2_rcode.R")
+	os.remove("tmp_design.txt")
 
 def main():
 	parser = argparse.ArgumentParser(description='Differential expression for RNA-seq experiments. Runs DESEQ2 by default\n')
@@ -161,13 +164,11 @@ def main():
 	fragment_parser = subparsers.add_parser('frags', help="Runs differental expression for fragments")
 
 	transcript_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage!', required=True)
-	transcript_parser.add_argument('-a','--padj', help='Option for DESEQ2, default=0.05', default=0.05, required=False)
-	transcript_parser.add_argument('-o','--outdir', help='Output directory', required=True)
+	transcript_parser.add_argument('-a','--pval', help='Option for DESEQ2, default=0.05', default=0.05, required=False)
 
 	fragment_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage!', required=True)
-	fragment_parser.add_argument('-a','--padj', help='Option for DESEQ2, default=0.05', default=0.05, required=False)
+	fragment_parser.add_argument('-a','--pval', help='Option for DESEQ2, default=0.05', default=0.05, required=False)
 	fragment_parser.add_argument('-p','--paired', help='Are samples paired end?', action="store_true", required=False)
-	fragment_parser.add_argument('-o','--outdir', help='Output directory', required=True)
 	args = vars(parser.parse_args())
 	conditions = []
 	sample_dict = {}
@@ -175,30 +176,26 @@ def main():
 	Config = ConfigParser.ConfigParser()
 	Config.optionxform = str
 	Config.read(args["config"])
-	if os.path.isdir(args["outdir"]):
-		print "Output directory already exists, existing results may be overwritten!"
-	else:
-		os.mkdir(args["outdir"])
 
 		#Read design matrix and create list of conditions and directories
 	conditions = ConfigSectionMap("Conditions", Config)
 	comparisons = ConfigSectionMap("Comparisons", Config)
-	create_design_for_R(args["outdir"], conditions) #Create design matrix
+	create_design_for_R(conditions) #Create design matrix
 
 	if args["subparser_name"] == "trans":
-		join_trans_counts(conditions, args["outdir"])
-		os.chdir(args["outdir"])
+		join_trans_counts(conditions)
 		for comp in comparisons:
 			c = comparisons[comp].split(",") #Names must be exact match for this to work!
 			comps = [x.strip(' ') for x in c]
-			rscript = write_deseq(conditions, comps[0], comps[1], args["padj"], args["subparser_name"]) ##Needs changing!!!
+			rscript = write_deseq(conditions, comps[0], comps[1], args["pval"], args["subparser_name"]) ##Needs changing!!!
 			run_rcode(rscript, "deseq2_rcode.R")
+			cleanup()
 
 	elif args["subparser_name"] == "frags":
-		join_frag_counts(conditions, args["outdir"], args["paired"])
-		os.chdir(args["outdir"])
+		join_frag_counts(conditions,  args["paired"])
 		for comp in comparisons:
 			c = comparisons[comp].split(",") #Names must be exact match for this to work!
 			comps = [x.strip(' ') for x in c]
-			rscript = write_deseq(conditions, comps[0], comps[1], args["padj"], args["subparser_name"]) ##Needs changing!!!
+			rscript = write_deseq(conditions, comps[0], comps[1], args["pval"], args["subparser_name"]) ##Needs changing!!!
 			run_rcode(rscript, "deseq2_rcode.R")
+			cleanup()

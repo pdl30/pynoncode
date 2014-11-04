@@ -41,6 +41,9 @@ def read_frag_input(ifile, paired):
 			word = line.split("\t")
 			if not paired:
 				frags[word[0]] = 1
+			else:
+				pairs = word[0].split("|")
+				frags[pairs[0], pairs[1]] = 1
 	return frags ##Will start with single and then consider paired
 
 def find_frag_transcripts(conditions, frags, paired):
@@ -53,9 +56,17 @@ def find_frag_transcripts(conditions, frags, paired):
 				if not paired:
 					if word[3] in frags:
 						transcripts[word[6]] = 1
+				else:
+					if int(word[7]) == 1:
+						next_line = next(f).rstrip()
+						next_word = next_line.split("\t")
+						if int(next_word[7]) == 2:
+							if (word[3], next_word[3]) in frags:
+								transcripts[word[6]] = 1
 	return transcripts
 
 def read_directories_for_transcripts(conditions, transcript_coords, paired):
+	#Counts the incidence of transcripts in fragments file
 	transcript_arrays = {} #Initialise this dictionary
 	for trans in transcript_coords:
 		transcript_arrays[trans] = {}
@@ -76,6 +87,29 @@ def read_directories_for_transcripts(conditions, transcript_coords, paired):
 						if end > int(transcript_coords[word[6]][2]):
 							end = int(transcript_coords[word[6]][2])
 						transcript_arrays[word[6]][idir][start:end] += float(word[4])#Add the count of that fragment to the transcript range it covers
+				else:
+					#I only need count once per pair! But I need to add this over all regions per pair!!
+					if int(word[7]) == 1: #First pair
+						if word[6] in transcript_coords: #Make sure transcript is important
+							next_line = next(f).rstrip()
+							next_word = next_line.split("\t")
+							if int(next_word[7]) == 2: #Make sure they are properly paired
+								p1_start = int(word[1]) - int(transcript_coords[word[6]][1])
+								p1_end = int(word[2]) - int(transcript_coords[word[6]][1])
+								if p1_start < 0:
+									p1_start = 0
+								if p1_end > int(transcript_coords[word[6]][2]):
+									p1_end = int(transcript_coords[word[6]][2])
+								transcript_arrays[word[6]][idir][p1_start:p1_end] += float(word[4]) #This is first pair
+
+								p2_start = int(next_word[1]) - int(transcript_coords[word[6]][1]) #Second pair
+								p2_end = int(next_word[2]) - int(transcript_coords[word[6]][1])
+								if p2_start < 0:
+									p2_start = 0
+								if p2_end > int(transcript_coords[word[6]][2]):
+									p2_end = int(transcript_coords[word[6]][2])
+								transcript_arrays[word[6]][idir][p2_start:p2_end] += float(word[4]) #Must add same count to every pair
+
 	return transcript_arrays
 
 def invert_dict_nonunique(d):
@@ -85,6 +119,7 @@ def invert_dict_nonunique(d):
     return newdict
 
 def average_arrays(conditions, transcript_arrays, transcript_coords):
+	#Reverse the conditions dictionary and then average counts per conditions
 	inv_conditions = invert_dict_nonunique(conditions)
 	inv_array = {}
 	for transcript in sorted(transcript_arrays):
@@ -100,6 +135,7 @@ def average_arrays(conditions, transcript_arrays, transcript_coords):
 	return inv_array
 
 def plot_arrays(conditions, transcript_arrays, outputdir):
+	#Plot sererately per transcript
 	for transcript in sorted(transcript_arrays):
 		for sample in sorted(transcript_arrays[transcript]):
 			length_of_transcript = len(transcript_arrays[transcript][sample])

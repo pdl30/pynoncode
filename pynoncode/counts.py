@@ -74,7 +74,7 @@ def paired_uniquemapped_comp(ifile, counts_dict):
 		else:
 			next_line = ""
 		next_word = next_line.split("\t")
-		if next_word[3] == word[3]:
+		if next_word[3] == word[3]: #This makes sure counts are only added once per pair!
 			id1 = re.sub("ID:", "", word[3])
 			m = re.match("ambiguous", word[7])
 			if word[7] == "no_feature" or m:
