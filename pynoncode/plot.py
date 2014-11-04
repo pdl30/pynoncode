@@ -47,7 +47,7 @@ def read_frag_input(ifile, paired):
 	return frags ##Will start with single and then consider paired
 
 def find_frag_transcripts(conditions, frags, paired):
-	transcripts = {}
+	transcripts = defaultdict(list)
 	for idir in conditions:
 		with open(idir + "/fragment_counts.txt") as f:
 			for line in f:
@@ -55,16 +55,17 @@ def find_frag_transcripts(conditions, frags, paired):
 				word = line.split("\t")
 				if not paired:
 					if word[3] in frags:
-						transcripts[word[6]] = 1
+						transcripts[word[6]].append((word[1], word[2])) #Position of diff fragment. Make this list if more than one are involved???
 				else:
 					if int(word[7]) == 1:
 						next_line = next(f).rstrip()
 						next_word = next_line.split("\t")
 						if int(next_word[7]) == 2:
 							if (word[3], next_word[3]) in frags:
-								transcripts[word[6]] = 1
+								transcripts[word[6]].append((word[1], word[2], next_word[1], word[2])) #Contains both reads positions
 	return transcripts
 
+#Could add region in plots!
 def read_directories_for_transcripts(conditions, transcript_coords, paired):
 	#Counts the incidence of transcripts in fragments file
 	transcript_arrays = {} #Initialise this dictionary
@@ -134,14 +135,49 @@ def average_arrays(conditions, transcript_arrays, transcript_coords):
 			inv_array[transcript][cond] /= count
 	return inv_array
 
-def plot_arrays(conditions, transcript_arrays, outputdir):
+def plot_trans_arrays(conditions, transcript_arrays, outputdir):
 	#Plot sererately per transcript
 	for transcript in sorted(transcript_arrays):
+		c = 1
 		for sample in sorted(transcript_arrays[transcript]):
+			c +=1
 			length_of_transcript = len(transcript_arrays[transcript][sample])
 			base_label = np.array(xrange(length_of_transcript))
-			plt.plot(base_label, transcript_arrays[transcript][sample], label="{}".format(sample)) #Wrong!
-		plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':6})
+			plt.plot(base_label, transcript_arrays[transcript][sample], label="{}".format(sample)) 
+		if c > 2: #Control size of legend
+			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':5})
+		else:
+			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':7})
+		plt.ylabel('Read Count')
+		plt.savefig(outputdir+'/{}.png'.format(transcript))
+		plt.close()
+
+def plot_frag_arrays(conditions, transcript_arrays, outputdir, transcript_coords, transcripts_dict, paired):
+	#Plot sererately per transcript
+	for transcript in sorted(transcript_arrays):
+		c = 1
+		for sample in sorted(transcript_arrays[transcript]):
+			c += 1 #Count number of samples for legend size
+
+			length_of_transcript = len(transcript_arrays[transcript][sample])
+			base_label = np.array(xrange(length_of_transcript))
+			plt.plot(base_label, transcript_arrays[transcript][sample], label="{}".format(sample)) 
+			
+			#Loop over transcripts dict which contains the fragments coordinates and then highlight these regions
+			for frag_pos in transcripts_dict[transcript]:
+				start_pos = int(frag_pos[0]) - int(transcript_coords[transcript][1])
+				end_pos = int(frag_pos[1]) - int(transcript_coords[transcript][1])
+				plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
+				if paired:
+					start_pos = int(frag_pos[2]) - int(transcript_coords[transcript][1])
+					end_pos = int(frag_pos[3]) - int(transcript_coords[transcript][1])
+					plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
+
+		#Plot labels
+		if c > 2: #Control size of legend
+			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':5})
+		else:
+			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':7})
 		plt.ylabel('Read Count')
 		plt.savefig(outputdir+'/{}.png'.format(transcript))
 		plt.close()
@@ -226,7 +262,7 @@ def main():
 	conditions = ConfigSectionMap("Conditions", Config)
 
 	if os.path.isdir(args["outdir"]):
-		print "Output directory already exists, will overwrite if necessary"
+		print "Output directory already exists, may overwrite existing files"
 	else:
 		os.mkdir(args["outdir"])
 
@@ -237,16 +273,21 @@ def main():
 	
 	if args["type"] == "trans" or args["type"] == "custom": #Exactly the same process
 		transcripts = read_trans_custom_input(args["input"])
-	elif args["type"] == "frags":
+		transcript_coords = preprocess_gtf(gtf, transcripts) #Annotation of transcripts
+		transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"]) #Dict of numpy array containing counts of transcripts
+		if args["a"]: #Average over conditions by reversing numpy array dict
+			averaged_array = average_arrays(conditions, transcript_arrays, transcript_coords)
+			plot_trans_arrays(conditions, averaged_array, args["outdir"], transcript_coords)
+		else:
+			plot_trans_arrays(conditions, transcript_arrays, args["outdir"], transcript_coords)
+	elif args["type"] == "frag":
 		fragments = read_frag_input(args["input"], args["p"])
-		transcripts = find_frag_transcripts(conditions, fragments, args["p"])
-
-	transcript_coords = preprocess_gtf(gtf, transcripts)
-	transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"])
-	if args["a"]:
-		averaged_array = average_arrays(conditions, transcript_arrays, transcript_coords)
-		plot_arrays(conditions, averaged_array, args["outdir"])
-	else:
-		plot_arrays(conditions, transcript_arrays, args["outdir"])
-
+		transcripts = find_frag_transcripts(conditions, fragments, args["p"]) #Now contains coordinates of fragment
+		transcript_coords = preprocess_gtf(gtf, transcripts) #Annotation of transcripts
+		transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"]) #Dict of numpy array containing counts of transcripts
+		if args["a"]: #Average over conditions by reversing numpy array dict
+			averaged_array = average_arrays(conditions, transcript_arrays, transcript_coords)
+			plot_frag_arrays(conditions, averaged_array, args["outdir"], transcript_coords, transcripts, args["p"])
+		else:
+			plot_frag_arrays(conditions, transcript_arrays, args["outdir"], transcript_coords, transcripts, args["p"]) 
 	
