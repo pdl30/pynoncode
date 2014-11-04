@@ -21,15 +21,25 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from multiprocessing import Pool, Manager
+from pynoncode import web_templates
 
-def read_trans_custom_input(ifile):
+def read_custom_input(ifile):
+	trans = {}
+	with open(ifile) as f:
+		for line in f:
+			line = line.rstrip()
+			word = line.split("\t")
+			trans[word[0]] = 1
+	return trans
+
+def read_trans_input(ifile):
 	trans = {}
 	with open(ifile) as f:
 		header = next(f)
 		for line in f:
 			line = line.rstrip()
 			word = line.split("\t")
-			trans[word[0]] = 1
+			trans[word[0]] = (word[2], word[5], word[6]) #LFC Pvalue, Padj
 	return trans
 
 def read_frag_input(ifile, paired):
@@ -149,7 +159,7 @@ def plot_trans_arrays(conditions, transcript_arrays, outputdir):
 		else:
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':7})
 		plt.ylabel('Read Count')
-		plt.savefig(outputdir+'/{}.png'.format(transcript))
+		plt.savefig(outputdir+'/plots/{}.png'.format(transcript))
 		plt.close()
 
 def plot_frag_arrays(conditions, transcript_arrays, outputdir, transcript_coords, transcripts_dict, paired):
@@ -167,11 +177,11 @@ def plot_frag_arrays(conditions, transcript_arrays, outputdir, transcript_coords
 			for frag_pos in transcripts_dict[transcript]:
 				start_pos = int(frag_pos[0]) - int(transcript_coords[transcript][1])
 				end_pos = int(frag_pos[1]) - int(transcript_coords[transcript][1])
-				plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
+				plt.axvspan(start_pos, end_pos, color='red', alpha=0.5)
 				if paired:
 					start_pos = int(frag_pos[2]) - int(transcript_coords[transcript][1])
 					end_pos = int(frag_pos[3]) - int(transcript_coords[transcript][1])
-					plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
+					plt.axvspan(start_pos, end_pos, color='red', alpha=0.5)
 
 		#Plot labels
 		if c > 2: #Control size of legend
@@ -179,7 +189,7 @@ def plot_frag_arrays(conditions, transcript_arrays, outputdir, transcript_coords
 		else:
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':7})
 		plt.ylabel('Read Count')
-		plt.savefig(outputdir+'/{}.png'.format(transcript))
+		plt.savefig(outputdir+'/plots/{}.png'.format(transcript))
 		plt.close()
 
 #To reduce memory usage, just store interesting transcripts
@@ -252,6 +262,8 @@ def main():
 
 	parser.add_argument('-a', help='Average sample according to sample conditions',  action="store_true", required=False)
 
+	parser.add_argument('-r', help='Generate HTML report of results.',  action="store_true", required=False)
+
 	parser.add_argument('-o','--outdir', help='Output directory', required=True)
 
 	args = vars(parser.parse_args())
@@ -265,21 +277,43 @@ def main():
 		print "Output directory already exists, may overwrite existing files"
 	else:
 		os.mkdir(args["outdir"])
+		os.mkdir("{}/plots".format(args["outdir"]))
 
 	if args["gtf"]:
 		gtf = args["gtf"]
 	else:
 		gtf = pkg_resources.resource_filename('pynoncode', 'data/{}_ncRNA.gtf'.format(args["genome"]))
 	
-	if args["type"] == "trans" or args["type"] == "custom": #Exactly the same process
-		transcripts = read_trans_custom_input(args["input"])
+	if args["type"] == "custom": 
+		transcripts = read_custom_input(args["input"])
 		transcript_coords = preprocess_gtf(gtf, transcripts) #Annotation of transcripts
 		transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"]) #Dict of numpy array containing counts of transcripts
 		if args["a"]: #Average over conditions by reversing numpy array dict
 			averaged_array = average_arrays(conditions, transcript_arrays, transcript_coords)
-			plot_trans_arrays(conditions, averaged_array, args["outdir"], transcript_coords)
+			plot_trans_arrays(conditions, averaged_array, args["outdir"])
 		else:
-			plot_trans_arrays(conditions, transcript_arrays, args["outdir"], transcript_coords)
+			plot_trans_arrays(conditions, transcript_arrays, args["outdir"])
+
+	elif args["type"] == "trans": 
+		transcripts = read_trans_input(args["input"]) #Now contains LFC, Pvalue and padj
+		transcript_coords = preprocess_gtf(gtf, transcripts) #Annotation of transcripts
+		transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"]) #Dict of numpy array containing counts of transcripts
+		if args["a"]: #Average over conditions by reversing numpy array dict
+			averaged_array = average_arrays(conditions, transcript_arrays, transcript_coords)
+			plot_trans_arrays(conditions, averaged_array, args["outdir"])
+		else:
+			plot_trans_arrays(conditions, transcript_arrays, args["outdir"])
+
+		#Create web report
+		if args["r"]:
+			path_to_stuff = pkg_resources.resource_filename('pynoncode', 'data/')
+			command = "unzip {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"])
+			subprocess.call(command.split())
+			html = web_templates.create_html(transcripts)
+			output = open(args["outdir"]+"/pynoncode.html", "w")
+			output.write(html)
+			output.close()
+
 	elif args["type"] == "frag":
 		fragments = read_frag_input(args["input"], args["p"])
 		transcripts = find_frag_transcripts(conditions, fragments, args["p"]) #Now contains coordinates of fragment
@@ -290,4 +324,4 @@ def main():
 			plot_frag_arrays(conditions, averaged_array, args["outdir"], transcript_coords, transcripts, args["p"])
 		else:
 			plot_frag_arrays(conditions, transcript_arrays, args["outdir"], transcript_coords, transcripts, args["p"]) 
-	
+main()
