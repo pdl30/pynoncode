@@ -102,7 +102,7 @@ def f_header():
         <p><a href="#" class="btn btn-primary btn-lg" role="button">Learn more about pynoncode &raquo;</a></p>
       </div>
 </div>
-<div class="container" style="height: 800px; overflow: auto;">
+<div class="container" style="height: 600px; overflow: auto;">
 <table class="table table-striped table-bordered table-condensed">
       """
 	return header
