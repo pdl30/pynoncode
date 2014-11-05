@@ -185,7 +185,7 @@ def frags_table(transcipts, paired):
 <td><a href="{11}">Link</a></td>
 </tr>
  	  			""".format(frag_pos[0], frag_pos[1], frag_pos[2], transcipts[trans][frag_pos][0], frag_pos[0], frag_pos[3], frag_pos[4], transcipts[trans][frag_pos][1], 
- 	  				transcipts[trans][frag_pos][2][0], transcipts[trans][frag_pos][2][1], trans, link)
+ 	  				transcipts[trans][frag_pos][2][1], transcipts[trans][frag_pos][2][0], trans, link)
 	else: #Unpaired samples
 		thead = """
 <thead>
@@ -216,7 +216,7 @@ def frags_table(transcipts, paired):
 <td>{6}</td>
 <td><a href="{7}">Link</a></td>
 </tr>
- 	  			""".format(frag_pos[0], frag_pos[1], frag_pos[2], transcipts[trans][frag_pos][0], transcipts[trans][frag_pos][1][0], transcipts[trans][frag_pos][1][1], trans, link)
+ 	  			""".format(frag_pos[0], frag_pos[1], frag_pos[2], transcipts[trans][frag_pos][0], transcipts[trans][frag_pos][1][1], transcipts[trans][frag_pos][1][0], trans, link)
 	return thead
 
 def ending():
