@@ -50,29 +50,37 @@ def read_frag_input(ifile, paired):
 			line = line.rstrip()
 			word = line.split("\t")
 			if not paired:
-				frags[word[0]] = 1
+				frags[word[0]] = (word[2], word[5], word[6])
 			else:
 				pairs = word[0].split("|")
-				frags[pairs[0], pairs[1]] = 1
+				frags[pairs[0], pairs[1]] = (word[2], word[5], word[6]) #LFC. Pvalue, padj
 	return frags ##Will start with single and then consider paired
 
 def find_frag_transcripts(conditions, frags, paired):
-	transcripts = defaultdict(list)
+	transcripts = {}
 	for idir in conditions:
 		with open(idir + "/fragment_counts.txt") as f:
 			for line in f:
 				line = line.rstrip()
 				word = line.split("\t")
-				if not paired:
+				if not paired: #This is adding every occurence, need to just find unique positions!
 					if word[3] in frags:
-						transcripts[word[6]].append((word[1], word[2])) #Position of diff fragment. Make this list if more than one are involved???
+						if word[6] not in transcripts:
+							transcripts[word[6]] = {}
+							transcripts[word[6]][word[0], word[1], word[2]] = (word[3], frags[word[3]])#Position of diff fragment. Make this list if more than one are involved???
+						else:
+							transcripts[word[6]][word[0], word[1], word[2]] = (word[3], frags[word[3]])
 				else:
 					if int(word[7]) == 1:
 						next_line = next(f).rstrip()
 						next_word = next_line.split("\t")
 						if int(next_word[7]) == 2:
 							if (word[3], next_word[3]) in frags:
-								transcripts[word[6]].append((word[1], word[2], next_word[1], word[2])) #Contains both reads positions
+								if word[6] not in transcripts:
+									transcripts[word[6]] = {}
+									transcripts[word[6]][word[0], word[1], word[2], next_word[1], word[2]] = (word[3], next_word[3], frags[word[3], next_word[3]]) #Contains both reads positions
+								else:
+									transcripts[word[6]] = {}
 	return transcripts
 
 #Could add region in plots!
@@ -175,14 +183,13 @@ def plot_frag_arrays(conditions, transcript_arrays, outputdir, transcript_coords
 			
 			#Loop over transcripts dict which contains the fragments coordinates and then highlight these regions
 			for frag_pos in transcripts_dict[transcript]:
-				start_pos = int(frag_pos[0]) - int(transcript_coords[transcript][1])
-				end_pos = int(frag_pos[1]) - int(transcript_coords[transcript][1])
-				plt.axvspan(start_pos, end_pos, color='red', alpha=0.5)
+				start_pos = int(frag_pos[1]) - int(transcript_coords[transcript][1])
+				end_pos = int(frag_pos[2]) - int(transcript_coords[transcript][1])
+				plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
 				if paired:
-					start_pos = int(frag_pos[2]) - int(transcript_coords[transcript][1])
-					end_pos = int(frag_pos[3]) - int(transcript_coords[transcript][1])
-					plt.axvspan(start_pos, end_pos, color='red', alpha=0.5)
-
+					start_pos = int(frag_pos[3]) - int(transcript_coords[transcript][1])
+					end_pos = int(frag_pos[4]) - int(transcript_coords[transcript][1])
+					plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
 		#Plot labels
 		if c > 2: #Control size of legend
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':5})
@@ -252,7 +259,7 @@ def main():
 
 	parser.add_argument('-i','--input', help='Input file. Can be custom input file, transcripts or fragments file from DESEQ2, please specify using --type', required=True)
 
-	parser.add_argument('-t','--type', help='Options are custom/trans/frag according to which input file is submitted', required=True)
+	parser.add_argument('-t','--type', help='Options are custom/trans/frags according to which input file is submitted', required=True)
 
 	parser.add_argument('-g','--gtf', help='GTF for annotation. If not supplied, will use the packages GTF')
 
@@ -283,7 +290,8 @@ def main():
 		gtf = args["gtf"]
 	else:
 		gtf = pkg_resources.resource_filename('pynoncode', 'data/{}_ncRNA.gtf'.format(args["genome"]))
-	
+	path_to_stuff = pkg_resources.resource_filename('pynoncode', 'data/')
+
 	if args["type"] == "custom": 
 		transcripts = read_custom_input(args["input"])
 		transcript_coords = preprocess_gtf(gtf, transcripts) #Annotation of transcripts
@@ -306,17 +314,16 @@ def main():
 
 		#Create web report
 		if args["r"]:
-			path_to_stuff = pkg_resources.resource_filename('pynoncode', 'data/')
-			command = "unzip {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"])
-			subprocess.call(command.split())
-			html = web_templates.create_html(transcripts)
-			output = open(args["outdir"]+"/pynoncode.html", "w")
+			command = "unzip {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
+			subprocess.call(command.split()) 
+			html = web_templates.create_transcript_html(transcripts) #Get HTML text 
+			output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
 			output.write(html)
 			output.close()
 
-	elif args["type"] == "frag":
+	elif args["type"] == "frags":
 		fragments = read_frag_input(args["input"], args["p"])
-		transcripts = find_frag_transcripts(conditions, fragments, args["p"]) #Now contains coordinates of fragment
+		transcripts = find_frag_transcripts(conditions, fragments, args["p"]) #Now contains coordinates of fragment, LFC and pvalue
 		transcript_coords = preprocess_gtf(gtf, transcripts) #Annotation of transcripts
 		transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"]) #Dict of numpy array containing counts of transcripts
 		if args["a"]: #Average over conditions by reversing numpy array dict
@@ -324,4 +331,11 @@ def main():
 			plot_frag_arrays(conditions, averaged_array, args["outdir"], transcript_coords, transcripts, args["p"])
 		else:
 			plot_frag_arrays(conditions, transcript_arrays, args["outdir"], transcript_coords, transcripts, args["p"]) 
-main()
+
+		if args["r"]:
+			command = "unzip {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
+			subprocess.call(command.split()) 
+			html = web_templates.create_fragment_html(transcripts, args["p"]) #Get HTML text 
+			output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
+			output.write(html)
+			output.close()

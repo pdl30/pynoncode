@@ -28,7 +28,7 @@ This will install the scripts found in the pyrnatools/scripts directory. For mor
 - pynon_count.py - Creates transcript counts and fragment counts files from BED files using if specified multiple mapped reads
 - pynon_ucsc.py - Converts fragments table to UCSC formatted bigWigs
 - pynon_diff.py - Differential expression on transcripts and fragments. For examples of configuration files please see [here](https://github.com/pdl30/pynoncode/tree/master/configuration_examples)
-- pynon_plot.py - Plots profiles of transcripts. For examples of configuration files please see [here](https://github.com/pdl30/pynoncode/tree/master/configuration_examples)
+- pynon_report.py - Plots profiles of transcripts and creates a HTML report of the differentially expressed fragments and transcripts. For examples of configuration files please see [here](https://github.com/pdl30/pynoncode/tree/master/configuration_examples)
 
 ##Annotation
 - Inlcuded in this package are a mouse and human GTF. For more information, see [here](https://github.com/pdl30/pynoncode/tree/master/pynoncode/data)
