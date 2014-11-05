@@ -101,9 +101,9 @@ def f_header():
         <h1>Pynoncode Fragments results</h1>
         <p><a href="#" class="btn btn-primary btn-lg" role="button">Learn more about pynoncode &raquo;</a></p>
       </div>
-<table class="table-responsive"  style = "overflow: auto;">
-<table class="table table-striped table-bordered table-condensed" style="max-width:760px;">
-      
+</div>
+<div class="container" style="height: 800px; overflow: auto;">
+<table class="table table-striped table-bordered table-condensed">
       """
 	return header
 
