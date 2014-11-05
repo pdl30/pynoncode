@@ -80,7 +80,7 @@ def find_frag_transcripts(conditions, frags, paired):
 									transcripts[word[6]] = {}
 									transcripts[word[6]][word[0], word[1], word[2], next_word[1], word[2]] = (word[3], next_word[3], frags[word[3], next_word[3]]) #Contains both reads positions
 								else:
-									transcripts[word[6]] = {}
+									transcripts[word[6]][word[0], word[1], word[2], next_word[1], word[2]] = (word[3], next_word[3], frags[word[3], next_word[3]])
 	return transcripts
 
 #Could add region in plots!
@@ -314,7 +314,7 @@ def main():
 
 		#Create web report
 		if args["r"]:
-			command = "unzip {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
+			command = "unzip -o {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
 			subprocess.call(command.split()) 
 			html = web_templates.create_transcript_html(transcripts) #Get HTML text 
 			output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
@@ -333,7 +333,7 @@ def main():
 			plot_frag_arrays(conditions, transcript_arrays, args["outdir"], transcript_coords, transcripts, args["p"]) 
 
 		if args["r"]:
-			command = "unzip {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
+			command = "unzip -o {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
 			subprocess.call(command.split()) 
 			html = web_templates.create_fragment_html(transcripts, args["p"]) #Get HTML text 
 			output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
