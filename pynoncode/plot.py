@@ -141,7 +141,7 @@ def average_arrays(conditions, transcript_arrays, transcript_coords):
 	#Reverse the conditions dictionary and then average counts per conditions
 	inv_conditions = invert_dict_nonunique(conditions)
 	inv_array = {}
-	for transcript in sorted(transcript_arrays):
+	for transcript in sorted(transcript_arrays):  #Naming is confusing, transcript here is an array
 		length = int(transcript_coords[transcript][2]) - int(transcript_coords[transcript][1])
 		inv_array[transcript] = {}
 		for cond in inv_conditions:
@@ -191,7 +191,7 @@ def plot_frag_arrays(conditions, transcript_arrays, outputdir, transcript_coords
 					end_pos = int(frag_pos[4]) - int(transcript_coords[transcript][1])
 					plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
 		#Plot labels
-		if c > 2: #Control size of legend
+		if c >= 3: #Control size of legend
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':5})
 		else:
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':7})
@@ -290,7 +290,8 @@ def main():
 		gtf = args["gtf"]
 	else:
 		gtf = pkg_resources.resource_filename('pynoncode', 'data/{}_ncRNA.gtf'.format(args["genome"]))
-	path_to_stuff = pkg_resources.resource_filename('pynoncode', 'data/')
+
+	path_to_stuff = pkg_resources.resource_filename('pynoncode', 'data/') #Used for web templates css features
 
 	if args["type"] == "custom": 
 		transcripts = read_custom_input(args["input"])
