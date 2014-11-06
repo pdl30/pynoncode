@@ -33,7 +33,7 @@ This will install the scripts found in the pyrnatools/scripts directory. For mor
 
 - pynon_align.py:
   Please trim adapters before using this program. Some programs for doing this are [cutadapt](https://code.google.com/p/cutadapt/). 
-  This converts FASTQ to FASTA and runs bowtie aligner to exact both unique and multimapped sequences. If the -c option is specified, pynon_align.py will trim tRNA CCA ends from the unmapped reads and then rerun. The program will then use a GTF file to annotate the mapped fragments using HTSeq. The resulting files can be found in pynoncode directory and are called unique_mapped.BED and multi_mapped.BED
+  This converts FASTQ to FASTA and runs bowtie aligner to exact both unique and multimapped sequences. If the -c option is specified, pynon_align.py will trim tRNA CCA ends from the unmapped reads and then rerun the alignment step. The program will then use a GTF file to annotate the mapped fragments using HTSeq. The resulting files can be found in pynoncode directory and are called unique_mapped.BED and multi_mapped.BED
 
 - pynon_count.py:
   This uses the uniquely mapped reads and if -m is specified, will use the multi-mapped reads to create counts files of both the transcripts and fragments. 
