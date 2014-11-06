@@ -24,8 +24,11 @@ This will install the scripts found in the pyrnatools/scripts directory. For mor
 - samtools version: 0.1.19 or greater. [Link](http://www.htslib.org/) 
 
 ##Core Pipeline
-- pynon_align.py - Converts FASTQ to FASTA and runs bowtie aligner to exact both unique and multimapped sequences
-- pynon_count.py - Creates transcript counts and fragment counts files from BED files using if specified multiple mapped reads
+- ###pynon_align.py:
+ - Please trim adapters before using this program. Some programs for doing this are [cutadapt](https://code.google.com/p/cutadapt/). 
+   This converts FASTQ to FASTA and runs bowtie aligner to exact both unique and multimapped sequences. If the -c option is specified, pynon_align.py will trim tRNA CCA ends from the unmapped reads and then rerun. 
+- ###pynon_count.py:
+ - Creates transcript counts and fragment counts files from BED files using if specified multiple mapped reads
 - pynon_ucsc.py - Converts fragments table to UCSC formatted bigWigs
 - pynon_diff.py - Differential expression on transcripts and fragments. For examples of configuration files please see [here](https://github.com/pdl30/pynoncode/tree/master/configuration_examples)
 - pynon_report.py - Plots profiles of transcripts and creates a HTML report of the differentially expressed fragments and transcripts. For examples of configuration files please see [here](https://github.com/pdl30/pynoncode/tree/master/configuration_examples)
