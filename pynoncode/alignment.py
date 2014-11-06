@@ -184,10 +184,14 @@ def main():
 	outpath = os.path.join(args["outdir"], "pynoncode")
 	if os.path.isdir(outdir):
 		print "Output directory exists"
+		if os.path.isdir(outpath):
+			pass
+		else:
+			subprocess.call(["mkdir", outpath])
 	else:
 		subprocess.call(["mkdir", outdir])
 		subprocess.call(["mkdir", outpath])
-
+		
 	if args["gtf"]:
 		gtf = args["gtf"]
 	else:
