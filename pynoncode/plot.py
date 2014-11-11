@@ -162,10 +162,11 @@ def plot_trans_arrays(conditions, transcript_arrays, outputdir):
 			length_of_transcript = len(transcript_arrays[transcript][sample])
 			base_label = np.array(xrange(length_of_transcript))
 			plt.plot(base_label, transcript_arrays[transcript][sample], label="{}".format(sample)) 
-		if c > 2: #Control size of legend
-			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':5})
+		if c <= 4: #Control size of legend
+			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':8})
 		else:
-			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':7})
+			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':5})
+			
 		plt.ylabel('Read Count')
 		plt.savefig(outputdir+'/plots/{}.png'.format(transcript))
 		plt.close()
@@ -191,7 +192,7 @@ def plot_frag_arrays(conditions, transcript_arrays, outputdir, transcript_coords
 					end_pos = int(frag_pos[4]) - int(transcript_coords[transcript][1])
 					plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
 		#Plot labels
-		if c >= 3: #Control size of legend
+		if c <= 4: #Control size of legend
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':5})
 		else:
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':7})
@@ -315,8 +316,9 @@ def main():
 
 		#Create web report
 		if args["r"]:
+			FNULL = open(os.devnull, 'w')
 			command = "unzip -o {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
-			subprocess.call(command.split()) 
+			subprocess.call(command.split(), stdout=FNULL) 
 			html = web_templates.create_transcript_html(transcripts) #Get HTML text 
 			output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
 			output.write(html)
@@ -334,8 +336,9 @@ def main():
 			plot_frag_arrays(conditions, transcript_arrays, args["outdir"], transcript_coords, transcripts, args["p"]) 
 
 		if args["r"]:
+			FNULL = open(os.devnull, 'w')
 			command = "unzip -o {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
-			subprocess.call(command.split()) 
+			subprocess.call(command.split(), stdout=FNULL) 
 			html = web_templates.create_fragment_html(transcripts, args["p"]) #Get HTML text 
 			output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
 			output.write(html)
