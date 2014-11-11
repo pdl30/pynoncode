@@ -32,17 +32,18 @@ def read_custom_input(ifile):
 			trans[word[0]] = 1
 	return trans
 
-def read_trans_input(ifile):
+def read_trans_input(ifile, pval):
 	trans = {}
 	with open(ifile) as f:
 		header = next(f)
 		for line in f:
 			line = line.rstrip()
 			word = line.split("\t")
-			trans[word[0]] = (word[2], word[5], word[6]) #LFC Pvalue, Padj
+			if float(word[5]) <= pval:
+				trans[word[0]] = (word[2], word[5], word[6]) #LFC Pvalue, Padj
 	return trans
 
-def read_frag_input(ifile, paired):
+def read_frag_input(ifile, paired, pval):
 	frags = {}
 	with open(ifile) as f:
 		header = next(f)
@@ -50,10 +51,12 @@ def read_frag_input(ifile, paired):
 			line = line.rstrip()
 			word = line.split("\t")
 			if not paired:
-				frags[word[0]] = (word[2], word[5], word[6])
+				if float(word[5]) <= pval:
+					frags[word[0]] = (word[2], word[5], word[6])
 			else:
 				pairs = word[0].split("|")
-				frags[pairs[0], pairs[1]] = (word[2], word[5], word[6]) #LFC. Pvalue, padj
+				if float(word[5]) <= pval:
+					frags[pairs[0], pairs[1]] = (word[2], word[5], word[6]) #LFC. Pvalue, padj
 	return frags ##Will start with single and then consider paired
 
 def find_frag_transcripts(conditions, frags, paired):
@@ -214,7 +217,7 @@ def preprocess_gtf(gtf, transcripts):
 		if len(list_of_exons) == 1: #Don't care about exon numbers, just get start and end. Strand is unimportant
 			transcript_coords[trans] = (exons[trans][0].iv.chrom, exons[trans][0].iv.start, exons[trans][0].iv.end, exons[trans][0].iv.strand) 
 		else:
-			#Strand is important here, need to becareful here.
+			#Strand is important, need to becareful here.
 			exon_count = 1
 			for exon in list_of_exons:
 				if exon.iv.strand == "+":
@@ -250,30 +253,44 @@ def ConfigSectionMap(section, Config):
 			dict1[option] = None
 	return dict1
 
-def read_dirs(args):
-	return read_directories_for_transcripts(*args)
+
+def write_trans_summary(transcripts, outdir):
+	output = open(outdir + "/transcript_summary.tsv", "w")
+	for trans in transcripts:
+		output.write("{}\t{}\t{}\n".format(trans, transcript_info[trans][1], transcript_info[trans][0])),
+	output.close()
+	
+def write_frag_summary(transcripts, paired, outdir):
+	output = open(outdir + "/fragment_summary.tsv", "w")
+	for trans in transcipts:
+		for frag_pos in transcipts[trans]:
+			if paired:
+				output.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(frag_pos[0], frag_pos[1], frag_pos[2], transcipts[trans][frag_pos][0], frag_pos[0], frag_pos[3], frag_pos[4], 
+					transcipts[trans][frag_pos][1], transcipts[trans][frag_pos][2][1], transcipts[trans][frag_pos][2][0], trans))
+			else:
+				output.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(frag_pos[0], frag_pos[1], frag_pos[2], transcipts[trans][frag_pos][0], 
+					transcipts[trans][frag_pos][1][1], transcipts[trans][frag_pos][1][0], trans))
+	output.close()
 
 def main():
 	parser = argparse.ArgumentParser(description='Plots transcripts from pynon processed samples\n')
+	subparsers = parser.add_subparsers(help='Programs included',dest="subparser_name")
+	#Parent Subparser
+	base_subparser = argparse.ArgumentParser(add_help=False)
+	base_subparser.add_argument('-c','--config', help='Config file, similar as the one supplied to pynon_diff.py. Please see documentation for more details', required=True)
+	base_subparser.add_argument('-i','--input', help='Input file. Can be custom input file, transcripts or fragments file from DESEQ2, please specify using --type', required=True)
+	base_subparser.add_argument('-g','--gtf', help='GTF for annotation. If not supplied, will use the packages GTF')
+	base_subparser.add_argument('-n','--genome', help='Sample genome name, options are hg19/mm10', required=True)
+	base_subparser.add_argument('-p', help='Use if samples are paired end', action="store_true", required=False)
+	base_subparser.add_argument('-a', help='Average sample according to sample conditions',  action="store_true", required=False)
+	
+	base_subparser.add_argument('-o','--outdir', help='Output directory', required=True)
 
-	parser.add_argument('-c','--config', help='Config file, similar as the one supplied to pynon_diff.py. Please see documentation for more details', required=True)
-
-	parser.add_argument('-i','--input', help='Input file. Can be custom input file, transcripts or fragments file from DESEQ2, please specify using --type', required=True)
-
-	parser.add_argument('-t','--type', help='Options are custom/trans/frags according to which input file is submitted', required=True)
-
-	parser.add_argument('-g','--gtf', help='GTF for annotation. If not supplied, will use the packages GTF')
-
-	parser.add_argument('-n','--genome', help='Sample genome name, options are hg19/mm10', required=True)
-
-	parser.add_argument('-p', help='Use if samples are paired end', action="store_true", required=False)
-
-	parser.add_argument('-a', help='Average sample according to sample conditions',  action="store_true", required=False)
-
-	parser.add_argument('-r', help='Generate HTML report of results.',  action="store_true", required=False)
-
-	parser.add_argument('-o','--outdir', help='Output directory', required=True)
-
+	custom_parser = subparsers.add_parser('custom', help="Provide custom input file", parents=[base_subparser])
+	trans_parser = subparsers.add_parser('trans', help="Provide differential transcript output from pynon_diff.py", parents=[base_subparser])
+	trans_parser.add_argument('-v', '--pval', help='Cutoff for significance, default=0.1', default=0.1, required=False)
+	frags_parser = subparsers.add_parser('frags', help="Provide differential fragment output from pynon_diff.py", parents=[base_subparser])
+	frags_parser.add_argument('-v', '--pval', help='Cutoff for significance, default=0.1', default=0.1, required=False)
 	args = vars(parser.parse_args())
 
 	Config = ConfigParser.ConfigParser()
@@ -294,7 +311,7 @@ def main():
 
 	path_to_stuff = pkg_resources.resource_filename('pynoncode', 'data/') #Used for web templates css features
 
-	if args["type"] == "custom": 
+	if args["subparser_name"] == "custom": 
 		transcripts = read_custom_input(args["input"])
 		transcript_coords = preprocess_gtf(gtf, transcripts) #Annotation of transcripts
 		transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"]) #Dict of numpy array containing counts of transcripts
@@ -304,8 +321,8 @@ def main():
 		else:
 			plot_trans_arrays(conditions, transcript_arrays, args["outdir"])
 
-	elif args["type"] == "trans": 
-		transcripts = read_trans_input(args["input"]) #Now contains LFC, Pvalue and padj
+	elif args["subparser_name"] == "trans": 
+		transcripts = read_trans_input(args["input"], args["pval"]) #Now contains LFC, Pvalue and padj
 		transcript_coords = preprocess_gtf(gtf, transcripts) #Annotation of transcripts
 		transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"]) #Dict of numpy array containing counts of transcripts
 		if args["a"]: #Average over conditions by reversing numpy array dict
@@ -315,17 +332,18 @@ def main():
 			plot_trans_arrays(conditions, transcript_arrays, args["outdir"])
 
 		#Create web report
-		if args["r"]:
-			FNULL = open(os.devnull, 'w')
-			command = "unzip -o {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
-			subprocess.call(command.split(), stdout=FNULL) 
-			html = web_templates.create_transcript_html(transcripts) #Get HTML text 
-			output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
-			output.write(html)
-			output.close()
+		FNULL = open(os.devnull, 'w')
+		command = "unzip -o {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
+		subprocess.call(command.split(), stdout=FNULL) 
+		html = web_templates.create_transcript_html(transcripts) #Get HTML text 
+		output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
+		output.write(html)
+		output.close()
 
-	elif args["type"] == "frags":
-		fragments = read_frag_input(args["input"], args["p"])
+		write_trans_summary(transcripts, args["outdir"])
+
+	elif args["subparser_name"] == "frags":
+		fragments = read_frag_input(args["input"], args["p"], args["pval"])
 		transcripts = find_frag_transcripts(conditions, fragments, args["p"]) #Now contains coordinates of fragment, LFC and pvalue
 		transcript_coords = preprocess_gtf(gtf, transcripts) #Annotation of transcripts
 		transcript_arrays = read_directories_for_transcripts(conditions, transcript_coords, args["p"]) #Dict of numpy array containing counts of transcripts
@@ -335,11 +353,13 @@ def main():
 		else:
 			plot_frag_arrays(conditions, transcript_arrays, args["outdir"], transcript_coords, transcripts, args["p"]) 
 
-		if args["r"]:
-			FNULL = open(os.devnull, 'w')
-			command = "unzip -o {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
-			subprocess.call(command.split(), stdout=FNULL) 
-			html = web_templates.create_fragment_html(transcripts, args["p"]) #Get HTML text 
-			output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
-			output.write(html)
-			output.close()
+		#Creating web report
+		FNULL = open(os.devnull, 'w')
+		command = "unzip -o {0}/bootstrap-3.3.0-dist.zip -d {1}".format(path_to_stuff, args["outdir"]) #Move css and other stuff to output directory
+		subprocess.call(command.split(), stdout=FNULL) 
+		html = web_templates.create_fragment_html(transcripts, args["p"]) #Get HTML text 
+		output = open(args["outdir"]+"/pynoncode.html", "w") #Write it out
+		output.write(html)
+		output.close()
+
+		write_frag_summary(transcripts, args["p"], args["outdir"])

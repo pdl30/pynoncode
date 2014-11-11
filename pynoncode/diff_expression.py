@@ -96,7 +96,7 @@ def join_frag_counts(idict, paired):
 	output.close()
 
 
-def write_deseq(sample_dict, cond1, cond2, pval, atype):
+def write_deseq(sample_dict, cond1, cond2, atype, output):
 	print "==> Running differental expression analysis...\n"
 	rscript =  "suppressMessages(library(DESeq2))\n"
 	rscript += "pdata <- read.table('tmp_design.txt', header=T)\n"
@@ -110,13 +110,13 @@ def write_deseq(sample_dict, cond1, cond2, pval, atype):
 	rscript += "rnaseq_dds$condition <- factor(rnaseq_dds$condition, levels=unique(pdata[,2]))\n"
 	rscript += "rnaseq_dds <- DESeq(rnaseq_dds)\n"
 	rscript += "rnaseq_res <- results(rnaseq_dds, contrast=c('condition','{0}','{1}'))\n".format(cond1, cond2)
-	rscript += "rnaseq_sig <- rnaseq_res[which(rnaseq_res$pvalue <= {}),]\n".format(pval)
-	if atype == "trans":
-		rscript += "write.table(rnaseq_sig, file='{0}_vs_{1}_sig_transcripts.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
-		rscript += "write.table(rnaseq_res, file='{0}_vs_{1}_all_transcripts.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
-	elif atype == "frags":
-		rscript += "write.table(rnaseq_sig, file='{0}_vs_{1}_sig_fragments.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
-		rscript += "write.table(rnaseq_res, file='{0}_vs_{1}_all_fragments.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
+	#rscript += "rnaseq_sig <- rnaseq_res[which(rnaseq_res$pvalue <= {}),]\n".format(pval)
+	#if atype == "trans":
+	#	rscript += "write.table(rnaseq_sig, file='{0}_vs_{1}_sig_transcripts.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
+	rscript += "write.table(rnaseq_res, file='{0}', sep='\\t', quote=F)\n".format(output)
+	#elif atype == "frags":
+	#	rscript += "write.table(rnaseq_sig, file='{0}_vs_{1}_sig_fragments.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
+	#	rscript += "write.table(rnaseq_res, file='{0}_vs_{1}_all_fragments.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
 	return rscript
 
 def create_design_for_R(idict):
@@ -157,18 +157,19 @@ def cleanup():
 	os.remove("deseq2_rcode.R")
 	os.remove("tmp_design.txt")
 
+
 def main():
 	parser = argparse.ArgumentParser(description='Differential expression for RNA-seq experiments. Runs DESEQ2 by default\n')
 	subparsers = parser.add_subparsers(help='Programs included',dest="subparser_name")
+	
 	transcript_parser = subparsers.add_parser('trans', help="Runs differental expression for transcripts")
-	fragment_parser = subparsers.add_parser('frags', help="Runs differental expression for fragments")
-
 	transcript_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage!', required=True)
-	transcript_parser.add_argument('-a','--pval', help='Option for DESEQ2, default=0.05', default=0.05, required=False)
+	transcript_parser.add_argument('-o','--output', help='Output file name', required=True)
 
+	fragment_parser = subparsers.add_parser('frags', help="Runs differental expression for fragments")
 	fragment_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage!', required=True)
-	fragment_parser.add_argument('-a','--pval', help='Option for DESEQ2, default=0.05', default=0.05, required=False)
-	fragment_parser.add_argument('-p','--paired', help='Are samples paired end?', action="store_true", required=False)
+	fragment_parser.add_argument('-p','--paired', help='Use if samples are paired end', action="store_true", required=False)
+	fragment_parser.add_argument('-o','--output', help='Output file name', required=True)
 	args = vars(parser.parse_args())
 	conditions = []
 	sample_dict = {}
@@ -187,7 +188,7 @@ def main():
 		for comp in comparisons:
 			c = comparisons[comp].split(",") #Names must be exact match for this to work!
 			comps = [x.strip(' ') for x in c]
-			rscript = write_deseq(conditions, comps[0], comps[1], args["pval"], args["subparser_name"]) ##Needs changing!!!
+			rscript = write_deseq(conditions, comps[0], comps[1], args["subparser_name"], args["output"]) ##Needs changing!!!
 			run_rcode(rscript, "deseq2_rcode.R")
 			cleanup()
 
@@ -196,6 +197,6 @@ def main():
 		for comp in comparisons:
 			c = comparisons[comp].split(",") #Names must be exact match for this to work!
 			comps = [x.strip(' ') for x in c]
-			rscript = write_deseq(conditions, comps[0], comps[1], args["pval"], args["subparser_name"]) ##Needs changing!!!
+			rscript = write_deseq(conditions, comps[0], comps[1], args["subparser_name"], args["output"]) ##Needs changing!!!
 			run_rcode(rscript, "deseq2_rcode.R")
 			cleanup()
