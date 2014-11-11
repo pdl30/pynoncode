@@ -273,14 +273,14 @@ def write_frag_summary(transcripts, paired, outdir):
 		output.write("Chromosome\tStart\tEnd\tRead1\tChromosome\tStart\tEnd\tRead2\tP Value\tLog Fold Change\tMapped Transcript\n"),
 	else:
 		output.write("Chromosome\tStart\tEnd\tRead1\tP Value\tLog Fold Change\tMapped Transcript\n"),
-	for trans in sorted(transcipts):
-		for frag_pos in sorted(transcipts[trans]):
+	for trans in sorted(transcripts):
+		for frag_pos in sorted(transcripts[trans]):
 			if paired:
-				output.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(frag_pos[0], frag_pos[1], frag_pos[2], transcipts[trans][frag_pos][0], frag_pos[0], frag_pos[3], frag_pos[4], 
-					transcipts[trans][frag_pos][1], transcipts[trans][frag_pos][2][1], transcipts[trans][frag_pos][2][0], trans))
+				output.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(frag_pos[0], frag_pos[1], frag_pos[2], transcripts[trans][frag_pos][0], frag_pos[0], frag_pos[3], frag_pos[4], 
+					transcripts[trans][frag_pos][1], transcripts[trans][frag_pos][2][1], transcripts[trans][frag_pos][2][0], trans))
 			else:
-				output.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(frag_pos[0], frag_pos[1], frag_pos[2], transcipts[trans][frag_pos][0], 
-					transcipts[trans][frag_pos][1][1], transcipts[trans][frag_pos][1][0], trans))
+				output.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(frag_pos[0], frag_pos[1], frag_pos[2], transcripts[trans][frag_pos][0], 
+					transcripts[trans][frag_pos][1][1], transcripts[trans][frag_pos][1][0], trans))
 	output.close()
 
 def main():
