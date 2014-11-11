@@ -39,7 +39,9 @@ def read_trans_input(ifile, pval):
 		for line in f:
 			line = line.rstrip()
 			word = line.split("\t")
-			if float(word[5]) <= pval:
+			if word[5] == "NA":
+				pass
+			elif float(word[5]) <= pval:
 				trans[word[0]] = (word[2], word[5], word[6]) #LFC Pvalue, Padj
 	return trans
 
@@ -51,11 +53,15 @@ def read_frag_input(ifile, paired, pval):
 			line = line.rstrip()
 			word = line.split("\t")
 			if not paired:
-				if float(word[5]) <= pval:
+				if word[5] == "NA":
+					pass
+				elif float(word[5]) <= pval:
 					frags[word[0]] = (word[2], word[5], word[6])
 			else:
 				pairs = word[0].split("|")
-				if float(word[5]) <= pval:
+				if word[5] == "NA":
+					pass
+				elif float(word[5]) <= pval:
 					frags[pairs[0], pairs[1]] = (word[2], word[5], word[6]) #LFC. Pvalue, padj
 	return frags ##Will start with single and then consider paired
 
@@ -256,14 +262,19 @@ def ConfigSectionMap(section, Config):
 
 def write_trans_summary(transcripts, outdir):
 	output = open(outdir + "/transcript_summary.tsv", "w")
-	for trans in transcripts:
-		output.write("{}\t{}\t{}\n".format(trans, transcript_info[trans][1], transcript_info[trans][0])),
+	output.write("Transcript\tP-Value\tLFC\n"),
+	for trans in sorted(transcripts):
+		output.write("{}\t{}\t{}\n".format(trans, transcripts[trans][1], transcripts[trans][0])),
 	output.close()
 	
 def write_frag_summary(transcripts, paired, outdir):
 	output = open(outdir + "/fragment_summary.tsv", "w")
-	for trans in transcipts:
-		for frag_pos in transcipts[trans]:
+	if paired:
+		output.write("Chromosome\tStart\tEnd\tRead1\tChromosome\tStart\tEnd\tRead2\tP Value\tLog Fold Change\tMapped Transcript\n"),
+	else:
+		output.write("Chromosome\tStart\tEnd\tRead1\tP Value\tLog Fold Change\tMapped Transcript\n"),
+	for trans in sorted(transcipts):
+		for frag_pos in sorted(transcipts[trans]):
 			if paired:
 				output.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(frag_pos[0], frag_pos[1], frag_pos[2], transcipts[trans][frag_pos][0], frag_pos[0], frag_pos[3], frag_pos[4], 
 					transcipts[trans][frag_pos][1], transcipts[trans][frag_pos][2][1], transcipts[trans][frag_pos][2][0], trans))

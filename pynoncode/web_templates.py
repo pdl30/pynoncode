@@ -166,7 +166,7 @@ def trans_table(transcript_info):
 </tr>
 </thead>"""
 	count = 0 
-	for trans in transcript_info:
+	for trans in sorted(transcript_info):
 		link = "plots/{}.png".format(trans)
 		if count == 0:
 			body2 = """
@@ -213,8 +213,8 @@ def frags_table(transcipts, paired):
 </tr>
 </thead>
 <tbody>"""
-		for trans in transcipts:
-			for frag_pos in transcipts[trans]: #Now a list containing fragment, lfc, pvalue, padj
+		for trans in sorted(transcipts):
+			for frag_pos in sorted(transcipts[trans]): #Now a list containing fragment, lfc, pvalue, padj
 				link = "plots/{}.png".format(trans)
 				thead  += """
 
@@ -249,8 +249,8 @@ def frags_table(transcipts, paired):
 </tr>
 </thead>
 <tbody>"""
-		for trans in transcipts:
-			for frag_pos in transcipts[trans]: #Now a list containing fragment, lfc, pvalue, padj
+		for trans in sorted(transcipts):
+			for frag_pos in sorted(transcipts[trans]): #Now a list containing fragment, lfc, pvalue, padj
 				link = "plots/{}.png".format(trans)
 				thead  += """
 
