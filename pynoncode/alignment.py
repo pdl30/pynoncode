@@ -239,10 +239,10 @@ def main():
 	#Annotation part of the script
 	annotate_sam("unique_mapped.sam", gtf)
 	annotate_sam("multi_mapped.sam", gtf)
-	convert_and_sort("unique_mapped.sam")
-	convert_and_sort("multi_mapped.sam")
-	convert_sam_bed("unique_mapped_sort.sam", "unique_mapped.samout", args["paired"], "unique_mapped.BED")
-	convert_sam_bed("multi_mapped_sort.sam", "multi_mapped.samout", args["paired"], "multi_mapped.BED")
+	#convert_and_sort("unique_mapped.sam")
+	#convert_and_sort("multi_mapped.sam")
+	convert_sam_bed("unique_mapped.sam", "unique_mapped.samout", args["paired"], "unique_mapped.BED")
+	convert_sam_bed("multi_mapped.sam", "multi_mapped.samout", args["paired"], "multi_mapped.BED")
 	cleanup()
 	useful_fastas = ["original_fasta_1.fa", "original_fasta_2.fa", "original_fasta.fa", "clipped_1.fa", "clipped_2.fa", "clipped_fasta.fa"]
 	falist = [ f for f in os.listdir(".") if f.endswith(".fa") ]
