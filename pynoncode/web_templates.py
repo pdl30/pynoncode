@@ -214,8 +214,10 @@ def frags_table(transcipts, paired):
 </thead>
 <tbody>"""
 		for trans in sorted(transcipts):
+			a = 1
 			for frag_pos in sorted(transcipts[trans]): #Now a list containing fragment, lfc, pvalue, padj
-				link = "plots/{}.png".format(trans)
+				link = "plots/{}_{}.png".format(trans, a)
+				a += 1
 				thead  += """
 
 <tr>
@@ -250,8 +252,10 @@ def frags_table(transcipts, paired):
 </thead>
 <tbody>"""
 		for trans in sorted(transcipts):
+			a = 1
 			for frag_pos in sorted(transcipts[trans]): #Now a list containing fragment, lfc, pvalue, padj
-				link = "plots/{}.png".format(trans)
+				link = "plots/{}_{}.png".format(trans, a)
+				a += 1
 				thead  += """
 
 <tr>
