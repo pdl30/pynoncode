@@ -182,35 +182,6 @@ def plot_trans_arrays(conditions, transcript_arrays, outputdir):
 
 def plot_frag_arrays(conditions, transcript_arrays, outputdir, transcript_coords, transcripts_dict, paired):
 	#Plot sererately per transcript
-	for transcript in sorted(transcript_arrays):
-		c = 1
-		for sample in sorted(transcript_arrays[transcript]):
-			c += 1 #Count number of samples for legend size
-
-			length_of_transcript = len(transcript_arrays[transcript][sample])
-			base_label = np.array(xrange(length_of_transcript))
-			plt.plot(base_label, transcript_arrays[transcript][sample], label="{}".format(sample)) #Same as transcripts
-			
-			#Loop over transcripts dict which contains the fragments coordinates and then highlight these regions
-			for frag_pos in transcripts_dict[transcript]:
-				start_pos = int(frag_pos[1]) - int(transcript_coords[transcript][1])
-				end_pos = int(frag_pos[2]) - int(transcript_coords[transcript][1])
-				plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
-				if paired:
-					start_pos = int(frag_pos[3]) - int(transcript_coords[transcript][1])
-					end_pos = int(frag_pos[4]) - int(transcript_coords[transcript][1])
-					plt.axvspan(start_pos, end_pos, color='red', alpha=0.2)
-		#Plot labels
-		if c <= 4: #Control size of legend
-			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':5})
-		else:
-			plt.legend(bbox_to_anchor=(1.05, 1), loc=1, borderaxespad=0., prop={'size':7})
-		plt.ylabel('Read Count')
-		plt.savefig(outputdir+'/plots/{}.png'.format(transcript))
-		plt.close()
-
-def plot_frag_arrays2(conditions, transcript_arrays, outputdir, transcript_coords, transcripts_dict, paired):
-	#Plot sererately per transcript
 	for transcript in sorted(transcripts_dict): #Key is transcript, values are dict of positions and then fragments 
 		a = 1
 		for frag_pos in sorted(transcripts_dict[transcript]):
@@ -391,9 +362,9 @@ def main():
 
 		if args["a"]: #Average over conditions by reversing numpy array dict
 			averaged_array = average_arrays(conditions, transcript_arrays, transcript_coords)
-			plot_frag_arrays2(conditions, averaged_array, args["outdir"], transcript_coords, transcripts, args["p"])
+			plot_frag_arrays(conditions, averaged_array, args["outdir"], transcript_coords, transcripts, args["p"])
 		else:
-			plot_frag_arrays2(conditions, transcript_arrays, args["outdir"], transcript_coords, transcripts, args["p"]) 
+			plot_frag_arrays(conditions, transcript_arrays, args["outdir"], transcript_coords, transcripts, args["p"]) 
 
 		#Creating web report
 		FNULL = open(os.devnull, 'w')
