@@ -15,10 +15,10 @@ import itertools
 import argparse
 from collections import defaultdict
 
-def join_trans_counts(idict):
+def join_trans_counts(idict, outdir):
 	print "==> Combining transcript counts...\n"
 	transcripts = {}
-	output = open("combined_transcript_counts.tsv", "w")
+	output = open(outdir+"/combined_transcript_counts.tsv", "w")
 	output.write("ID"), #Sort out header
 	for idir in sorted(idict):
 		output.write("\t{}".format(idir)),
@@ -45,10 +45,10 @@ def join_trans_counts(idict):
 		output.write("\n"),
 	output.close()
 
-def join_frag_counts(idict, paired):
+def join_frag_counts(idict, paired, outdir):
 	print "==> Combining fragment counts...\n"
 	data = {}
-	output = open("combined_fragment_counts.tsv", "w")
+	output = open(outdir+"/combined_fragment_counts.tsv", "w")
 	output.write("ID"),
 	for idir in sorted(idict):
 		output.write("\t{}".format(idir)),
@@ -95,27 +95,30 @@ def join_frag_counts(idict, paired):
 		output.write("\n"),
 	output.close()
 
-def write_deseq(sample_dict, cond1, cond2, atype, output):
+def write_deseq(sample_dict, cond1, cond2, output):
 	print "==> Running differental expression analysis...\n"
 	rscript =  "suppressMessages(library(DESeq2))\n"
 	rscript += "pdata <- read.table('tmp_design.txt', header=T)\n"
 	#Make sure they match!
-	if atype == "trans":
-		rscript += "counts <- read.table('combined_transcript_counts.tsv', sep='\\t', header=T, row.names=1)\n"
-	elif atype == "frags":
-		rscript += "counts <- read.table('combined_fragment_counts.tsv', sep='\\t', header=T, row.names=1)\n"
-		rscript += "counts = counts[which(rowSums(counts) >= 10),]\n" #Hard cut-off, not sure??
-	rscript += "rnaseq_dds <- DESeqDataSetFromMatrix(countData = counts, colData = data.frame(pdata), design = ~ condition)\n"
+
+	rscript += "trans_counts <- read.table('combined_transcript_counts.tsv', sep='\\t', header=T, row.names=1)\n"
+
+	rscript += "frag_counts <- read.table('combined_fragment_counts.tsv', sep='\\t', header=T, row.names=1)\n"
+	rscript += "frag_counts = frag_counts[which(rowSums(frag_counts) >= 10),]\n" #Hard cut-off, not sure??
+	
+	rscript += "rnaseq_dds <- DESeqDataSetFromMatrix(countData = trans_counts, colData = data.frame(pdata), design = ~ condition)\n"
+	rscript += "rnaseq_dds2 <- DESeqDataSetFromMatrix(countData = frag_counts, colData = data.frame(pdata), design = ~ condition)\n"
+
 	rscript += "rnaseq_dds$condition <- factor(rnaseq_dds$condition, levels=unique(pdata[,2]))\n"
+	rscript += "rnaseq_dds2$condition <- factor(rnaseq_dds2$condition, levels=unique(pdata[,2]))\n"
 	rscript += "rnaseq_dds <- DESeq(rnaseq_dds)\n"
+	rscript += "rnaseq_dds2 <- DESeq(rnaseq_dds2)\n"
+
 	rscript += "rnaseq_res <- results(rnaseq_dds, contrast=c('condition','{0}','{1}'))\n".format(cond1, cond2)
-	#rscript += "rnaseq_sig <- rnaseq_res[which(rnaseq_res$pvalue <= {}),]\n".format(pval)
-	#if atype == "trans":
-	#	rscript += "write.table(rnaseq_sig, file='{0}_vs_{1}_sig_transcripts.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
-	rscript += "write.table(rnaseq_res, file='{0}', sep='\\t', quote=F)\n".format(output)
-	#elif atype == "frags":
-	#	rscript += "write.table(rnaseq_sig, file='{0}_vs_{1}_sig_fragments.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
-	#	rscript += "write.table(rnaseq_res, file='{0}_vs_{1}_all_fragments.tsv', sep='\\t', quote=F)\n".format(cond1, cond2)
+	rscript += "rnaseq_res2 <- results(rnaseq_dds2, contrast=c('condition','{0}','{1}'))\n".format(cond1, cond2)
+
+	rscript += "write.table(rnaseq_res, file='{0}/diff_transcripts.tsv', sep='\\t', quote=F)\n".format(output)
+	rscript += "write.table(rnaseq_res2, file='{0}/diff_fragments.tsv', sep='\\t', quote=F)\n".format(output)
 	return rscript
 
 def create_design_for_R(idict):
@@ -158,16 +161,11 @@ def cleanup():
 
 def main():
 	parser = argparse.ArgumentParser(description='Differential expression for RNA-seq experiments. Runs DESEQ2 by default\n')
-	subparsers = parser.add_subparsers(help='Programs included',dest="subparser_name")
 	
-	transcript_parser = subparsers.add_parser('trans', help="Runs differental expression for transcripts")
-	transcript_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage.', required=True)
-	transcript_parser.add_argument('-o','--output', help='Output file name', required=True)
+	parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage.', required=True)
+	parser.add_argument('-p', help='Use if samples are paired end', action="store_true", required=False)
+	parser.add_argument('-o','--output', help='Output results directory', required=True)
 
-	fragment_parser = subparsers.add_parser('frags', help="Runs differental expression for fragments")
-	fragment_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage.', required=True)
-	fragment_parser.add_argument('-p','--paired', help='Use if samples are paired end', action="store_true", required=False)
-	fragment_parser.add_argument('-o','--output', help='Output file name', required=True)
 	args = vars(parser.parse_args())
 	conditions = []
 	sample_dict = {}
@@ -181,20 +179,16 @@ def main():
 	comparisons = ConfigSectionMap("Comparisons", Config)
 	create_design_for_R(conditions) #Create design matrix
 
-	if args["subparser_name"] == "trans":
-		join_trans_counts(conditions)
-		for comp in comparisons:
-			c = comparisons[comp].split(",") #Names must be exact match for this to work!
-			comps = [x.strip(' ') for x in c]
-			rscript = write_deseq(conditions, comps[0], comps[1], args["subparser_name"], args["output"]) ##Needs changing!!!
-			run_rcode(rscript, "deseq2_rcode.R")
-			cleanup()
+	if os.path.isdir(args["output"]):
+		print "Output directory exists"
+	else:
+		os.mkdir(args["output"])
 
-	elif args["subparser_name"] == "frags":
-		join_frag_counts(conditions,  args["paired"])
-		for comp in comparisons:
-			c = comparisons[comp].split(",") #Names must be exact match for this to work!
-			comps = [x.strip(' ') for x in c]
-			rscript = write_deseq(conditions, comps[0], comps[1], args["subparser_name"], args["output"]) ##Needs changing!!!
-			run_rcode(rscript, "deseq2_rcode.R")
-			cleanup()
+	join_trans_counts(conditions, args["output"])
+	join_frag_counts(conditions,  args["p"], args["output"])
+	for comp in comparisons:
+		c = comparisons[comp].split(",") #Names must be exact match for this to work!
+		comps = [x.strip(' ') for x in c]
+		rscript = write_deseq(conditions, comps[0], comps[1], args["output"]) 		
+		run_rcode(rscript, "deseq2_rcode.R")
+		cleanup()

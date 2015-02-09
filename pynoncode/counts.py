@@ -220,10 +220,47 @@ def cleanup(orig_dir, input_dir):
 	subprocess.call(command.split())
 	subprocess.call(command2.split())
 
+def write_transcripts(distributed_transcripts):
+	output = open("transcript_counts.txt", "w")
+	for transcript in distributed_transcripts:
+		output.write("{}\t{}\n".format(transcript, distributed_transcripts[transcript])),
+	output.close()
+
+def write_multiple_fragments(distributed_fragments, paired):
+	output1 = open("fragment_counts.txt", "w")
+	for fragment in distributed_fragments:
+			#First Read
+		if paired:
+			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t1\n".format(distributed_fragments[fragment][2][0][0],distributed_fragments[fragment][2][0][1],distributed_fragments[fragment][2][0][2],
+				distributed_fragments[fragment][0][0],distributed_fragments[fragment][1], distributed_fragments[fragment][2][0][3],distributed_fragments[fragment][3])),
+		#Second Read
+			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t2\n".format(distributed_fragments[fragment][2][0][4],distributed_fragments[fragment][2][0][5],distributed_fragments[fragment][2][0][6],
+				distributed_fragments[fragment][0][1],distributed_fragments[fragment][1], distributed_fragments[fragment][2][0][7],distributed_fragments[fragment][3])),
+		else:
+			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(distributed_fragments[fragment][2][0][0],distributed_fragments[fragment][2][0][1],distributed_fragments[fragment][2][0][2],
+				distributed_fragments[fragment][0],distributed_fragments[fragment][1], distributed_fragments[fragment][2][0][3],distributed_fragments[fragment][3])),
+	output1.close()
+
+def write_single_fragments(unique_data, paired):
+	output1 = open("fragment_counts.txt", "a")
+	for fragment in unique_data["fragment_counts"]:
+		if paired:
+			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t1\n".format(unique_data["fragment_positions"][fragment][0], unique_data["fragment_positions"][fragment][1], 
+				unique_data["fragment_positions"][fragment][2], fragment[0], unique_data["fragment_counts"][fragment], unique_data["fragment_positions"][fragment][3],
+				unique_data["transcript_id"][fragment])),
+			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t2\n".format(unique_data["fragment_positions"][fragment][4], unique_data["fragment_positions"][fragment][5], 
+				unique_data["fragment_positions"][fragment][6], fragment[1], unique_data["fragment_counts"][fragment], unique_data["fragment_positions"][fragment][7],
+				unique_data["transcript_id"][fragment])),
+		else:
+			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(unique_data["fragment_positions"][fragment][0], unique_data["fragment_positions"][fragment][1], 
+				unique_data["fragment_positions"][fragment][2], fragment, unique_data["fragment_counts"][fragment], unique_data["fragment_positions"][fragment][3],
+				unique_data["transcript_id"][fragment])),
+	output1.close()
+
 def main():
 	parser = argparse.ArgumentParser(description='Processes ncRNA samples from fastq files to sam file.\n Please ensure FASTQ files are in current directory.\n ')
 	parser.add_argument('-i', '--input', help='Input directory after ncalign has been run', required=True)
-	parser.add_argument('-p', help='Experiment is paired end', action="store_true", required=False)
+	parser.add_argument('-p', help='Use if experiment is paired end', action="store_true", required=False)
 	parser.add_argument('-m', action='store_true', help='Use multiple mapped reads and add to final count for genes', required=False)
 	args = vars(parser.parse_args())
 	orig_path = os.getcwd()
@@ -249,40 +286,11 @@ def main():
 		distributed_transcripts = distribute_transcripts(unique_data, multi_data, new_transcript_counts, unique_totals, multi_uniques_count)
 		distributed_fragments = distribute_fragments(unique_data, multi_data, unique_totals, read_counts)
 
-		output = open("transcript_counts.txt", "w")
-		for transcript in distributed_transcripts:
-			output.write("{}\t{}\n".format(transcript, distributed_transcripts[transcript])),
-		output.close()
-		output1 = open("fragment_counts.txt", "w")
-		for fragment in distributed_fragments:
-			#First Read
-			if args["p"]:
-				output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t1\n".format(distributed_fragments[fragment][2][0][0],distributed_fragments[fragment][2][0][1],distributed_fragments[fragment][2][0][2],
-					distributed_fragments[fragment][0][0],distributed_fragments[fragment][1], distributed_fragments[fragment][2][0][3],distributed_fragments[fragment][3])),
-			#Second Read
-				output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t2\n".format(distributed_fragments[fragment][2][0][4],distributed_fragments[fragment][2][0][5],distributed_fragments[fragment][2][0][6],
-					distributed_fragments[fragment][0][1],distributed_fragments[fragment][1], distributed_fragments[fragment][2][0][7],distributed_fragments[fragment][3])),
-			else:
-				output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(distributed_fragments[fragment][2][0][0],distributed_fragments[fragment][2][0][1],distributed_fragments[fragment][2][0][2],
-					distributed_fragments[fragment][0],distributed_fragments[fragment][1], distributed_fragments[fragment][2][0][3],distributed_fragments[fragment][3])),
-		output1.close()
+		write_transcripts(distributed_transcripts)
+		write_multiple_fragments(distributed_fragments, args["p"])
+		
 	else:
-		output = open("transcript_counts.txt", "w")
-		for transcript in unique_data["transcript_counts"]:
-			output.write("{}\t{}\n".format(transcript, unique_data["transcript_counts"][transcript])),
-		output.close()
-	output1 = open("fragment_counts.txt", "a")
-	for fragment in unique_data["fragment_counts"]:
-		if args["p"]:
-			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t1\n".format(unique_data["fragment_positions"][fragment][0], unique_data["fragment_positions"][fragment][1], 
-				unique_data["fragment_positions"][fragment][2], fragment[0], unique_data["fragment_counts"][fragment], unique_data["fragment_positions"][fragment][3],
-				unique_data["transcript_id"][fragment])),
-			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t2\n".format(unique_data["fragment_positions"][fragment][4], unique_data["fragment_positions"][fragment][5], 
-				unique_data["fragment_positions"][fragment][6], fragment[1], unique_data["fragment_counts"][fragment], unique_data["fragment_positions"][fragment][7],
-				unique_data["transcript_id"][fragment])),
-		else:
-			output1.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(unique_data["fragment_positions"][fragment][0], unique_data["fragment_positions"][fragment][1], 
-				unique_data["fragment_positions"][fragment][2], fragment, unique_data["fragment_counts"][fragment], unique_data["fragment_positions"][fragment][3],
-				unique_data["transcript_id"][fragment])),
-	output1.close()
+		write_transcripts(unique_data["transcript_counts"])
+
+	write_single_fragments(unique_data, paired)
 	cleanup(orig_path, args["input"])
