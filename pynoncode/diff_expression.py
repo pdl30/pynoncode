@@ -95,7 +95,6 @@ def join_frag_counts(idict, paired):
 		output.write("\n"),
 	output.close()
 
-
 def write_deseq(sample_dict, cond1, cond2, atype, output):
 	print "==> Running differental expression analysis...\n"
 	rscript =  "suppressMessages(library(DESeq2))\n"
@@ -157,17 +156,16 @@ def cleanup():
 	os.remove("deseq2_rcode.R")
 	os.remove("tmp_design.txt")
 
-
 def main():
 	parser = argparse.ArgumentParser(description='Differential expression for RNA-seq experiments. Runs DESEQ2 by default\n')
 	subparsers = parser.add_subparsers(help='Programs included',dest="subparser_name")
 	
 	transcript_parser = subparsers.add_parser('trans', help="Runs differental expression for transcripts")
-	transcript_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage!', required=True)
+	transcript_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage.', required=True)
 	transcript_parser.add_argument('-o','--output', help='Output file name', required=True)
 
 	fragment_parser = subparsers.add_parser('frags', help="Runs differental expression for fragments")
-	fragment_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage!', required=True)
+	fragment_parser.add_argument('-c','--config', help='Config file containing parameters, please see documentation for examples of configuration and usage.', required=True)
 	fragment_parser.add_argument('-p','--paired', help='Use if samples are paired end', action="store_true", required=False)
 	fragment_parser.add_argument('-o','--output', help='Output file name', required=True)
 	args = vars(parser.parse_args())

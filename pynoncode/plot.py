@@ -284,6 +284,22 @@ def write_frag_summary(transcripts, paired, outdir):
 					transcripts[trans][frag_pos][1][1], transcripts[trans][frag_pos][1][0], trans))
 	output.close()
 
+def create_counts_dict(counts):
+	data = {}
+	with open(counts) as f:
+		header = next(f)
+		head = header.split("\t")
+		for line in f:
+			line = line.rstrip()
+			word = line.split("\t")
+			for i in range(1, len(head)):
+				if word[0] in data:
+					data[word[0]] = {}
+					data[word[0]][head[i]] = word[i]
+				else:
+					data[word[0]][head[i]] = word[i]
+	return data
+
 def main():
 	parser = argparse.ArgumentParser(description='Plots transcripts from pynon processed samples\n')
 	subparsers = parser.add_subparsers(help='Programs included',dest="subparser_name")

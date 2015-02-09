@@ -54,10 +54,10 @@ def cleanup():
 	os.remove("full_bed_file.BED")
 
 def main():
-	parser = argparse.ArgumentParser(description='Processes an ncpipe processed folder to create bigwigs\n')
-	parser.add_argument('-i','--input', help='Ncpipe formatted directory', required=True)
-	parser.add_argument('-p', help='Are samples paired end?', action='store_true', required=False)
-	parser.add_argument('-e', help='Is sample aligned to Ensembl formatted genome?', action='store_true', required=False)
+	parser = argparse.ArgumentParser(description='Processes an pynoncode processed folder to create bigwigs\n')
+	parser.add_argument('-i','--input', help='pynoncode formatted directory', required=True)
+	parser.add_argument('-p', help='Use if paired end', action='store_true', required=False)
+	parser.add_argument('-e', help='Use if sample is aligned to ensembl formatted genome.', action='store_true', required=False)
 	parser.add_argument('-g', '--genome', help='Options are mm10/hg19', required=True)
 	args = vars(parser.parse_args())
 	chrom = pkg_resources.resource_filename('pynoncode', 'data/{}.chrom.sizes'.format(args["genome"]))

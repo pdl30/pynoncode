@@ -8,152 +8,7 @@
 # All right reserved.
 ########################################################################
 
-def t_header():
-	header="""
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Pynoncode</title>   
-     <link href="dist/css/bootstrap.min.css" rel="stylesheet" media="screen">
-    <link href="dist/css/bootstrap.min.css" rel="dist/css/bootstrap-theme.min.css">
-    <script src="http://code.jquery.com/jquery-latest.js"></script>
-    <script src="dist/js/bootstrap.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-</head>
-  <body>
-
-
-<!-- Fixed navbar -->
-<div class="navbar navbar-default" role="navigation">
-<div class="container">
-<div class="navbar-header">
-<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-<span class="sr-only">Toggle navigation</span>
-<span class="icon-bar"></span>
-<span class="icon-bar"></span>
-<span class="icon-bar"></span>
-        
-</button>
-<a class="navbar-brand" href="#">pynoncode</a>
-</div>
-<div class="navbar-collapse collapse">
-<ul class="nav navbar-nav">
-<li class="active"><a href="#">Home</a></li>
-<li><a href="#about">About</a></li>
-<li><a href="#contact">Contact</a></li>
-</ul>
-</div><!--/.nav-collapse -->
-</div>
-</div>
-
-<div class="container"  role="main">
-
-<div class="jumbotron">
-        <h1>Pynoncode Transcripts results</h1>
-        <p><a href="#" class="btn btn-primary btn-lg" role="button">Learn more about pynoncode &raquo;</a></p>
-      </div>
-<table class="table table-striped table-bordered table-condensed">
-      
-      """
-	return header
-
-def f_header():
-	header="""
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Pynoncode</title>   
-     <link href="dist/css/bootstrap.min.css" rel="stylesheet" media="screen">
-    <link href="dist/css/bootstrap.min.css" rel="dist/css/bootstrap-theme.min.css">
-    <script src="http://code.jquery.com/jquery-latest.js"></script>
-    <script src="dist/js/bootstrap.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-</head>
-  <body>
-
-
-<!-- Fixed navbar -->
-<div class="navbar navbar-default" role="navigation">
-<div class="container">
-<div class="navbar-header">
-<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-<span class="sr-only">Toggle navigation</span>
-<span class="icon-bar"></span>
-<span class="icon-bar"></span>
-<span class="icon-bar"></span>
-        
-</button>
-<a class="navbar-brand" href="#">pynoncode</a>
-</div>
-<div class="navbar-collapse collapse">
-<ul class="nav navbar-nav">
-<li class="active"><a href="#">Home</a></li>
-<li><a href="#about">About</a></li>
-<li><a href="#contact">Contact</a></li>
-</ul>
-</div><!--/.nav-collapse -->
-</div>
-</div>
-
-<div class="container"  role="main">
-
-<div class="jumbotron">
-        <h1>Pynoncode Fragments results</h1>
-        <p><a href="#" class="btn btn-primary btn-lg" role="button">Learn more about pynoncode &raquo;</a></p>
-      </div>
-</div>
-<div class="container" style="height: 600px; overflow: auto;">
-<table class="table table-striped table-bordered table-condensed">
-      """
-	return header
-
-def p_header():
-	header="""
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Pynoncode</title>   
-     <link href="dist/css/bootstrap.min.css" rel="stylesheet" media="screen">
-    <link href="dist/css/bootstrap.min.css" rel="dist/css/bootstrap-theme.min.css">
-    <script src="http://code.jquery.com/jquery-latest.js"></script>
-    <script src="dist/js/bootstrap.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-</head>
-  <body>
-
-
-<!-- Fixed navbar -->
-<div class="navbar navbar-default" role="navigation">
-<div class="container">
-<div class="navbar-header">
-<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-<span class="sr-only">Toggle navigation</span>
-<span class="icon-bar"></span>
-<span class="icon-bar"></span>
-<span class="icon-bar"></span>
-        
-</button>
-<a class="navbar-brand" href="#">pynoncode</a>
-</div>
-<div class="navbar-collapse collapse">
-<ul class="nav navbar-nav">
-<li class="active"><a href="#">Home</a></li>
-<li><a href="#about">About</a></li>
-<li><a href="#contact">Contact</a></li>
-</ul>
-</div><!--/.nav-collapse -->
-</div>
-</div>
-
-<div class="container"  role="main">
-
-<div class="jumbotron">
-        <h1>Pynoncode</h1>
-        <p><a href="#" class="btn btn-primary btn-lg" role="button">Learn more about pynoncode &raquo;</a></p>
-      </div>
-</div>
-      """
-	return header
+from pynoncode import basic_template
 
 def trans_table(transcript_info):
 	thead = """
@@ -216,6 +71,7 @@ def frags_table(transcipts, paired):
 		for trans in sorted(transcipts):
 			a = 1
 			for frag_pos in sorted(transcipts[trans]): #Now a list containing fragment, lfc, pvalue, padj
+				print trans, frag_pos
 				link = "plots/{}_{}.png".format(trans, a)
 				a += 1
 				thead  += """
@@ -271,24 +127,47 @@ def frags_table(transcipts, paired):
  	  			""".format(frag_pos[0], frag_pos[1], frag_pos[2], transcipts[trans][frag_pos][0], transcipts[trans][frag_pos][1][1], transcipts[trans][frag_pos][1][0], trans, link)
 	return thead
 
-def ending():
-	ending = """
-		</tbody>
-</table>
-</table> 
-</div>
-</body>
-</html>"""
-	return ending
+
 
 def create_transcript_html(transcripts):
-	total_string = t_header()
+	total_string = basic_template.t_header()
 	total_string += trans_table(transcripts)
 	total_string += ending()
 	return total_string
 
 def create_fragment_html(transcripts, paired):
-	total_string = f_header()
+	total_string = basic_template.f_header()
 	total_string += frags_table(transcripts, paired)
-	total_string += ending()
+	total_string += basic_template.ending()
 	return total_string
+
+
+def counts_trans_table(transcript_counts):
+	c = 0
+	samples = []
+	for trans in transcript_counts:
+		for sample in transcript_counts[trans]:
+			if c == 0:
+				samples.append(sample)
+				c += 1
+
+	thead = """
+<thead>
+<tr>"""
+	for sample in sorted(samples):
+		thead = thead + "<th>{}</th>".format(sample)
+		thead = thead + """
+</tr>
+</thead>"""
+		for trans in sorted(transcript_counts):
+			for sample in sorted(transcript_counts[trans]):
+				thead = thead + """
+<tbody>
+<tr>
+<td>{0}</td>
+<td>{1}</td>
+<td>{2}</td>
+<td><a href="{3}">Link</a></td>
+</tr>"""
+	table = thead
+	return table
