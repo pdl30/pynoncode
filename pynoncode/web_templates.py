@@ -132,7 +132,7 @@ def frags_table(transcipts, paired):
 def create_transcript_html(transcripts):
 	total_string = basic_template.t_header()
 	total_string += trans_table(transcripts)
-	total_string += ending()
+	total_string += basic_template.ending()
 	return total_string
 
 def create_fragment_html(transcripts, paired):
